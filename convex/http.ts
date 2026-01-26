@@ -10,7 +10,7 @@ const http = httpRouter();
 http.route({
     path: "/webhooks/meta",
     method: "GET",
-    handler: httpAction(async (ctx, request) => {
+    handler: httpAction(async (_ctx, request) => {
         const { searchParams } = new URL(request.url);
         const mode = searchParams.get("hub.mode");
         const token = searchParams.get("hub.verify_token");
@@ -31,7 +31,7 @@ http.route({
 http.route({
     path: "/webhooks/meta",
     method: "POST",
-    handler: httpAction(async (ctx, request) => {
+    handler: httpAction(async (_ctx, request) => {
         const payload = await request.json();
 
         // Registramos el mensaje en la consola para que puedas verlo en tu terminal de Convex

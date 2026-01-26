@@ -3,8 +3,6 @@ import { action, internalQuery } from "./_generated/server";
 import { api, internal } from "./_generated/api";
 import { validateBusinessHours } from "./utils";
 import {
-    checkConfirmation,
-    checkOffensiveLanguage,
     constructSystemPrompt,
     parseAIResponse,
     detectVisualIntent
@@ -64,7 +62,7 @@ export const answer = action({
             menu.forEach(p => console.log(`   - Product: "${p.nombre}" | Foto: ${p.imagen_url ? "SI" : "NO"} | Cat: ${p.categoria}`));
 
             // 2. Business Hours
-            const { estaAbierto, mensaje: mensajeHorario, cierraPronto } = validateBusinessHours(
+            const { estaAbierto, mensaje: mensajeHorario } = validateBusinessHours(
                 negocio.horario_atencion,
                 negocio.tiempo_limite_cierre ?? 15
             );
@@ -81,10 +79,8 @@ export const answer = action({
             const systemPrompt = constructSystemPrompt({
                 negocio,
                 menu,
-                cliente,
                 estaAbierto,
                 mensajeHorario,
-                cierraPronto,
                 horaActual
             });
 
@@ -226,7 +222,7 @@ export const answer = action({
                 console.log("   Tools:", JSON.stringify(toolCalls));
             }
 
-            const parsed = parseAIResponse(rawContent, menu);
+            const parsed = parseAIResponse(rawContent);
             let { cleanResponse, intents } = parsed;
 
             // Handle Tool Calls

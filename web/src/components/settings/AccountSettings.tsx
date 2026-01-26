@@ -40,9 +40,8 @@ export function AccountSettings() {
                 </div>
                 <Button
                     variant="outline"
-                    rounded="full"
                     onClick={handleSignOut}
-                    className="mt-2 gap-2 text-red-500 border-red-100 hover:bg-red-50 hover:text-red-600 font-bold text-xs uppercase tracking-widest px-6"
+                    className="rounded-full mt-2 gap-2 text-red-500 border-red-100 hover:bg-red-50 hover:text-red-600 font-bold text-xs uppercase tracking-widest px-6"
                 >
                     <SignOut size={18} weight="bold" />
                     Cerrar Sesión
@@ -63,7 +62,7 @@ export function AccountSettings() {
                                 <p className="text-xs text-muted-foreground">Gestionado vía Clerk Auth</p>
                             </div>
                         </div>
-                        <Button variant="ghost" rounded="full" className="text-primary font-bold text-xs">Cambiar</Button>
+                        <Button variant="ghost" className="rounded-full text-primary font-bold text-xs">Cambiar</Button>
                     </div>
 
                     <div className="flex items-center justify-between p-5 bg-background border rounded-3xl hover:border-red-200 transition-all group cursor-pointer">

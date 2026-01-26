@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
 import { Storefront, Phone, MapPin, MapTrifold } from "@phosphor-icons/react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
@@ -69,7 +68,7 @@ export function GeneralSettings() {
                     <h3 className="text-xl font-black font-display tracking-tight">Información de Negocio</h3>
                     <p className="text-sm text-muted-foreground">Configura los datos básicos de tu comercio</p>
                 </div>
-                <Button onClick={handleSave} disabled={saving} rounded="full" className="gap-2 shadow-lg px-6 bg-[#00754A] hover:bg-[#00754A]/90">
+                <Button onClick={handleSave} disabled={saving} className="rounded-full gap-2 shadow-lg px-6 bg-[#00754A] hover:bg-[#00754A]/90">
                     {saving ? (
                         "Guardando..."
                     ) : (

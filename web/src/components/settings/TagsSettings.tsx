@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Tag, Trash, Plus, PencilSimple } from "@phosphor-icons/react";
 import { useQuery, useMutation } from "convex/react";
@@ -80,7 +80,7 @@ export function TagsSettings() {
                     <h3 className="text-xl font-black font-display tracking-tight">Etiquetas de Chats</h3>
                     <p className="text-sm text-muted-foreground">Organiza y segmenta tus conversaciones con facilidad.</p>
                 </div>
-                <Button onClick={() => handleEdit()} rounded="full" className="gap-2 shadow-lg px-6 bg-[#00754A] hover:bg-[#00754A]/90 h-10 font-bold text-xs uppercase tracking-widest">
+                <Button onClick={() => handleEdit()} className="rounded-full gap-2 shadow-lg px-6 bg-[#00754A] hover:bg-[#00754A]/90 h-10 font-bold text-xs uppercase tracking-widest">
                     <Plus size={18} weight="bold" />
                     Nueva Etiqueta
                 </Button>
@@ -176,16 +176,14 @@ export function TagsSettings() {
                         <Button
                             variant="ghost"
                             onClick={() => setIsDialogOpen(false)}
-                            rounded="full"
-                            className="px-6 font-bold h-10"
+                            className="rounded-full px-6 font-bold h-10"
                         >
                             Cancelar
                         </Button>
                         <Button
                             onClick={handleSave}
                             disabled={!editingTag?.nombre.trim()}
-                            rounded="full"
-                            className="px-8 font-bold shadow-lg bg-[#00754A] hover:bg-[#00754A]/90 h-10 text-xs uppercase tracking-widest"
+                            className="rounded-full px-8 font-bold shadow-lg bg-[#00754A] hover:bg-[#00754A]/90 h-10 text-xs uppercase tracking-widest"
                         >
                             {editingTag?.id ? 'Guardar' : 'Crear'}
                         </Button>

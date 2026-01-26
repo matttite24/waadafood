@@ -57,7 +57,7 @@ export function CreditsSettings() {
                                 <span>Uso del Plan</span>
                                 <span>{Math.round(percentage)}%</span>
                             </div>
-                            <Progress value={percentage} className="bg-white/20 h-2" indicatorClassName="bg-yellow-400" />
+                            <Progress value={percentage} className="bg-white/20 h-2" />
                         </div>
 
                         {creditos < 10 && (
@@ -70,8 +70,7 @@ export function CreditsSettings() {
                         )}
 
                         <Button
-                            rounded="full"
-                            className="w-full bg-white text-indigo-900 hover:bg-white/90 font-bold border-0 h-10"
+                            className="rounded-full w-full bg-white text-indigo-900 hover:bg-white/90 font-bold border-0 h-10"
                             onClick={handleRecharge}
                         >
                             Recargar Saldo (Simulado)

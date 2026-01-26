@@ -1,7 +1,6 @@
 import { MagnifyingGlass, Funnel, Check } from "@phosphor-icons/react";
 import { Virtuoso } from "react-virtuoso";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
     Command,
@@ -122,7 +121,7 @@ export function ContactListPanel({
                                                     onSelect={() => {
                                                         // Limpiar todas las etiquetas (esto requeriría un nuevo prop o lógica adicional)
                                                         // Por ahora, permitimos que el usuario las quite una a una o implementamos un clear
-                                                        selectedTagIds.forEach(id => onToggleTag(id));
+                                                        selectedTagIds.forEach((id: Id<"etiquetas">) => onToggleTag(id));
                                                     }}
                                                     className="justify-center text-center text-xs font-semibold text-primary hover:text-primary/80"
                                                 >

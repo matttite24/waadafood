@@ -132,10 +132,9 @@ export function MenuImagesSettings() {
                     />
                     <Button
                         variant="outline"
-                        rounded="full"
                         onClick={() => fileInputRef.current?.click()}
                         disabled={uploadingImage}
-                        className="gap-2 h-10 px-6 font-bold border-primary/20 text-primary hover:bg-primary/5"
+                        className="rounded-full gap-2 h-10 px-6 font-bold border-primary/20 text-primary hover:bg-primary/5"
                     >
                         <UploadSimple size={18} />
                         {uploadingImage ? "Subiendo..." : "Subir Imagen"}

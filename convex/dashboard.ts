@@ -75,9 +75,6 @@ export const getOverviewStats = query({
         const weeklyStats: Record<string, number> = {};
         // Initialize last 7 days
         for (let i = 6; i >= 0; i--) {
-            const d = new Date(todayStart - (i * 24 * 60 * 60 * 1000));
-            // Format: "Lun", "Mar", etc. (Short day name in Spanish)
-            const dayName = d.toLocaleDateString('es-ES', { weekday: 'short', timeZone: 'America/Bogota' });
             // Normalize key to handle potentially diverse locale strings, but readable for chart usually fine
             // We use day index to key map or just push to array at end
             weeklyStats[i] = 0; // Using index 0-6 as temp key, 0 = today, 6 = 7 days ago? No, loop goes 6->0

@@ -58,7 +58,7 @@ export function PaymentsSettings() {
                     <h3 className="text-xl font-black font-display tracking-tight">Métodos de Pago</h3>
                     <p className="text-sm text-muted-foreground">Define cómo pueden pagarte tus clientes.</p>
                 </div>
-                <Button onClick={handleSave} disabled={saving} rounded="full" className="gap-2 shadow-lg px-6 bg-[#00754A] hover:bg-[#00754A]/90 h-10">
+                <Button onClick={handleSave} disabled={saving} className="rounded-full gap-2 shadow-lg px-6 bg-[#00754A] hover:bg-[#00754A]/90 h-10">
                     {saving ? (
                         "Guardando..."
                     ) : (

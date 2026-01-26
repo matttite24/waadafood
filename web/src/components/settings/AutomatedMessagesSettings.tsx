@@ -95,8 +95,7 @@ export function AutomatedMessagesSettings() {
                 </div>
                 <Button
                     onClick={handleOpenCreate}
-                    rounded="full"
-                    className="gap-2 shadow-lg bg-[#00754A] hover:bg-[#00754A]/90 h-10 px-6 font-bold text-xs uppercase tracking-widest"
+                    className="rounded-full gap-2 shadow-lg bg-[#00754A] hover:bg-[#00754A]/90 h-10 px-6 font-bold text-xs uppercase tracking-widest"
                 >
                     <Plus weight="bold" />
                     Nueva
@@ -185,14 +184,13 @@ export function AutomatedMessagesSettings() {
                         </div>
                     </div>
                     <div className="flex justify-end gap-2">
-                        <Button variant="outline" rounded="full" onClick={() => setIsDialogOpen(false)} className="px-6 h-10 font-bold">
+                        <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="rounded-full px-6 h-10 font-bold">
                             Cancelar
                         </Button>
                         <Button
                             onClick={handleSave}
                             disabled={saving || !nombre.trim() || !contenido.trim()}
-                            rounded="full"
-                            className="px-8 font-bold shadow-lg bg-[#00754A] hover:bg-[#00754A]/90 h-10 text-xs uppercase tracking-widest"
+                            className="rounded-full px-8 font-bold shadow-lg bg-[#00754A] hover:bg-[#00754A]/90 h-10 text-xs uppercase tracking-widest"
                         >
                             {saving ? "Guardando..." : "Guardar"}
                         </Button>

@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { query, QueryCtx } from "./_generated/server";
+import { query } from "./_generated/server";
 import { paginationOptsValidator } from "convex/server";
 
 // Paginated query for chat list - optimized for large datasets

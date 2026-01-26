@@ -4,10 +4,8 @@ import { PALABRAS_OFENSIVAS, PALABRAS_CONFIRMACION, PREGUNTAS_ESTADO } from "./c
 export interface SystemPromptContext {
     negocio: any;
     menu: any[];
-    cliente: any;
     estaAbierto: boolean;
     mensajeHorario: string;
-    cierraPronto: boolean;
     horaActual: string;
 }
 
@@ -105,10 +103,8 @@ export function detectVisualIntent(userMessage: string, menu: any[]): string[] {
 export function constructSystemPrompt({
     negocio,
     menu,
-    cliente,
     estaAbierto,
     mensajeHorario,
-    cierraPronto,
     horaActual,
 }: SystemPromptContext): string {
     const tiemposInfo = negocio.tiempos_preparacion || "Consultar";
@@ -210,7 +206,7 @@ HERRAMIENTAS:
 }
 
 // === RESPONSE PARSING ===
-export function parseAIResponse(rawResponse: string, menu: any[]): ParsedResponse {
+export function parseAIResponse(rawResponse: string): ParsedResponse {
     let cleanResponse = rawResponse;
     const intents: ParsedResponse["intents"] = {
         chatManual: null,

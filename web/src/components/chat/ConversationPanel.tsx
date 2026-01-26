@@ -18,7 +18,7 @@ import { ChatInput } from "./ChatInput";
 import { MessageImage } from "./MessageImage";
 import { ChatBackground } from "./ChatBackground";
 import { Id } from "@convex/_generated/dataModel";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
 
 interface ConversationPanelProps {
@@ -30,6 +30,7 @@ interface ConversationPanelProps {
     formatTime: (date?: string) => string;
     availableTags: any[] | undefined;
     comercioId?: Id<"comercios">;
+    showInfoPanel?: boolean;
 }
 
 export function ConversationPanel({
@@ -101,7 +102,7 @@ export function ConversationPanel({
 
         const currentTags = selectedContact.etiquetas_ids || [];
         const newTags = currentTags.includes(tagId)
-            ? currentTags.filter((id: string) => id !== tagId)
+            ? currentTags.filter((id: Id<"etiquetas">) => id !== tagId)
             : [...currentTags, tagId];
 
         onUpdateClient(selectedContact._id, { etiquetas_ids: newTags });
