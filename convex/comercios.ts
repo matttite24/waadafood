@@ -38,7 +38,7 @@ export const update = mutation({
     },
 });
 
-// Obtener comercio por userId de Clerk
+// Obtener comercio por userId externo (Kinde/Clerk)
 export const getByUserId = query({
     args: { userId: v.string() },
     handler: async (ctx, args) => {

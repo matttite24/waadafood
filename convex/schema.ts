@@ -3,7 +3,7 @@ import { v } from "convex/values";
 
 export default defineSchema({
     comercios: defineTable({
-        clerk_user_id: v.string(), // Link to Clerk user
+        clerk_user_id: v.string(), // Link to external user (Kinde/Clerk)
         nombre_comercio: v.string(),
         prompt_personalidad: v.optional(v.string()),
         instrucciones_pago: v.optional(v.string()),
