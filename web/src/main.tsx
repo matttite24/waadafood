@@ -1,4 +1,4 @@
-// Production build trigger v1.0.3 - Final Auth Sync
+// Production build trigger v1.0.4 - Visual Verify
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
@@ -18,6 +18,7 @@ const convexUrl = isProduction
 
 console.log("📍 Current Hostname:", hostname);
 console.log("🌐 Selected Convex URL:", convexUrl);
+console.log("🚀 App Version: 1.0.4");
 
 if (!convexUrl) {
     console.error("❌ ERROR: VITE_CONVEX_URL is missing!");
