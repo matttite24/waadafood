@@ -20,9 +20,12 @@ if (!convexUrl) {
 
 const convex = new ConvexReactClient(convexUrl || "https://placeholder.convex.cloud");
 
+// Determine the domain for Clerk (needed for custom domains in production)
+const domain = window.location.hostname.includes("localhost") ? undefined : "waadafood.com";
+
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
-        <ClerkProvider publishableKey={clerkPubKey}>
+        <ClerkProvider publishableKey={clerkPubKey} domain={domain}>
             <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
                 <BrowserRouter>
                     <App />
