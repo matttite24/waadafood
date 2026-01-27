@@ -8,11 +8,19 @@ import { ConvexReactClient } from 'convex/react';
 import App from './App';
 import './styles/index.css';
 
-const convexUrl = import.meta.env.VITE_CONVEX_URL;
+const hostname = window.location.hostname;
+const isProduction = hostname === 'app.waadafood.com';
 
-console.log("🌐 Production Convex URL:", convexUrl);
+// Forzar URL de producción si estamos en el dominio real para evitar fallos de configuración en Cloudflare
+const convexUrl = isProduction
+    ? 'https://strong-herring-329.convex.cloud'
+    : (import.meta.env.VITE_CONVEX_URL || "https://mellow-snake-909.convex.cloud");
+
+console.log("📍 Current Hostname:", hostname);
+console.log("🌐 Selected Convex URL:", convexUrl);
+
 if (!convexUrl) {
-    console.error("❌ ERROR: VITE_CONVEX_URL is missing! Fallback: placeholder.cloud");
+    console.error("❌ ERROR: VITE_CONVEX_URL is missing!");
 }
 
 const convex = new ConvexReactClient(convexUrl || "https://placeholder.convex.cloud");
