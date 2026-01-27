@@ -3,7 +3,7 @@ import { v } from "convex/values";
 
 export default defineSchema({
     comercios: defineTable({
-        clerk_user_id: v.string(), // Link to external user (Kinde/prev Clerk)
+        auth_user_id: v.string(), // Link to external user (Kinde/Clerk/any auth provider)
         nombre_comercio: v.string(),
         prompt_personalidad: v.optional(v.string()),
         instrucciones_pago: v.optional(v.string()),
@@ -24,7 +24,7 @@ export default defineSchema({
         reglas_escalacion: v.optional(v.string()),
         creditos: v.optional(v.number()),
         ia_estilo: v.optional(v.string()), // "amigable", "profesional", "relajado"
-    }).index("by_user", ["clerk_user_id"]),
+    }).index("by_user", ["auth_user_id"]),
 
     clientes: defineTable({
         comercio_id: v.id("comercios"),

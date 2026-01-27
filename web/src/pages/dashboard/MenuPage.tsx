@@ -3,7 +3,6 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
-import { useKindeAuth } from "@kinde-oss/kinde-auth-react";
 import { useHeaderContent } from "@/hooks/use-header";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { CategorySection } from "@/components/menu/CategorySection";
@@ -11,6 +10,7 @@ import { ProductEditPanel } from "@/components/menu/ProductEditPanel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ForkKnife } from "@phosphor-icons/react";
 import { Id } from "@convex/_generated/dataModel";
+import { useComercio } from "@/hooks/useComercio";
 
 const CATEGORIAS_LISTA = ['Combos', 'Entradas', 'Principales', 'Bebidas', 'Postres', 'Otros'] as const;
 
@@ -25,13 +25,11 @@ type Product = {
 };
 
 export default function MenuPage() {
-    const { user } = useKindeAuth();
-    const userId = user?.id;
     const [activeCategory, setActiveCategory] = useState<string>("Todas");
     const [selectedProduct, setSelectedProduct] = useState<Product | null | undefined>(undefined);
 
     // 1. Data Fetching
-    const comercio = useQuery(api.comercios.getByUserId, userId ? { userId } : "skip");
+    const { comercio, isLoading: isComercioLoading } = useComercio();
     const products = useQuery(api.productos.list, comercio ? { comercio_id: comercio._id } : "skip");
 
     // 2. Filtering & Grouping Logic
@@ -87,7 +85,7 @@ export default function MenuPage() {
         center: headerCenter,
     });
 
-    if (products === undefined || comercio === undefined) {
+    if (isComercioLoading || products === undefined || !comercio) {
         return (
             <div className="flex gap-4 h-full">
                 <div className="flex-1 space-y-8 animate-pulse overflow-hidden">

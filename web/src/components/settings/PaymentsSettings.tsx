@@ -1,19 +1,26 @@
 import { Switch } from "@/components/ui/switch";
+import { useComercio } from "@/hooks/useComercio";
 import { Label } from "@/components/ui/label";
+import { useComercio } from "@/hooks/useComercio";
 import { Textarea } from "@/components/ui/textarea";
+import { useComercio } from "@/hooks/useComercio";
 import { Button } from "@/components/ui/button";
+import { useComercio } from "@/hooks/useComercio";
 import { Bank, Money } from "@phosphor-icons/react";
+import { useComercio } from "@/hooks/useComercio";
 import { useQuery, useMutation } from "convex/react";
+import { useComercio } from "@/hooks/useComercio";
 import { api } from "@convex/_generated/api";
-import { useKindeAuth } from "@kinde-oss/kinde-auth-react";
+import { useComercio } from "@/hooks/useComercio";
 import { useState, useEffect } from "react";
+import { useComercio } from "@/hooks/useComercio";
 import { toast } from "sonner";
+import { useComercio } from "@/hooks/useComercio";
 import { Check, Robot } from "@phosphor-icons/react";
+import { useComercio } from "@/hooks/useComercio";
 
 export function PaymentsSettings() {
-    const { user } = useKindeAuth();
-    const userId = user?.id;
-    const comercio = useQuery(api.comercios.getByUserId, userId ? { userId } : "skip");
+    const { comercio } = useComercio();
     const updateComercio = useMutation(api.comercios.update);
 
     const [efectivo, setEfectivo] = useState(false);

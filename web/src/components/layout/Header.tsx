@@ -1,11 +1,16 @@
 import { Bell, CheckCircle, Warning, ChatCircle } from "@phosphor-icons/react";
+import { useComercio } from "@/hooks/useComercio";
 import { Button } from "@/components/ui/button";
+import { useComercio } from "@/hooks/useComercio";
 // import { Badge } from "@/components/ui/badge"; 
 import { Separator } from "@/components/ui/separator";
+import { useComercio } from "@/hooks/useComercio";
 import { useHeader } from "@/hooks/use-header";
+import { useComercio } from "@/hooks/useComercio";
 import { useQuery } from "convex/react";
+import { useComercio } from "@/hooks/useComercio";
 import { api } from "@convex/_generated/api";
-import { useKindeAuth } from "@kinde-oss/kinde-auth-react";
+import { useComercio } from "@/hooks/useComercio";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -15,15 +20,16 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Link } from "react-router-dom";
+import { useComercio } from "@/hooks/useComercio";
 import { formatDistanceToNow } from "date-fns";
+import { useComercio } from "@/hooks/useComercio";
 import { es } from "date-fns/locale";
+import { useComercio } from "@/hooks/useComercio";
 
 
 export function Header() {
     const { centerContent, rightContent } = useHeader();
-    const { user } = useKindeAuth();
-    const userId = user?.id;
-    const comercio = useQuery(api.comercios.getByUserId, userId ? { userId } : "skip");
+    const { comercio } = useComercio();
     const notifications = useQuery(api.notifications.listItems, comercio ? { comercio_id: comercio._id } : "skip");
 
     return (

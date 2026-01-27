@@ -4,7 +4,6 @@ import { useState, useMemo } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { Id } from "@convex/_generated/dataModel";
-import { useKindeAuth } from "@kinde-oss/kinde-auth-react";
 import { useHeaderContent } from "@/hooks/use-header";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { ConversationSheet } from "@/components/pedidos/ConversationSheet";
@@ -13,6 +12,7 @@ import { TrendUp, ArrowsClockwise } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useComercio } from "@/hooks/useComercio";
 
 // Shared logic & components
 import { METRIC_DETAILS as SHARED_METRIC_DETAILS } from "@/../../shared/metricDefinitions";
@@ -28,8 +28,6 @@ import {
 } from "@/components/metrics/SummaryCards";
 
 export default function MetricsPage() {
-    const { user } = useKindeAuth();
-    const userId = user?.id;
     const [filtroFecha, setFiltroFecha] = useState<"hoy" | "ayer" | "7dias" | "30dias">("hoy");
     const [selectedClienteId, setSelectedClienteId] = useState<Id<"clientes"> | null>(null);
     const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -37,7 +35,7 @@ export default function MetricsPage() {
     const [selectedMetric, setSelectedMetric] = useState<string | null>(null);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-    const comercio = useQuery(api.comercios.getByUserId, userId ? { userId } : "skip");
+    const { comercio, isLoading: isComercioLoading } = useComercio();
     const metrics = useQuery(api.metrics.getSummary,
         comercio ? { comercio_id: comercio._id, filtro: filtroFecha } : "skip"
     );
@@ -83,7 +81,7 @@ export default function MetricsPage() {
 
     useHeaderContent({ center: headerContent, right: rightContent });
 
-    if (!metrics || !comercio) {
+    if (isComercioLoading || !metrics || !comercio) {
         return (
             <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
                 <div className="relative">

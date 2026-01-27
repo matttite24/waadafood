@@ -1,23 +1,32 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { useComercio } from "@/hooks/useComercio";
 import { Input } from "@/components/ui/input";
+import { useComercio } from "@/hooks/useComercio";
 import { Textarea } from "@/components/ui/textarea";
+import { useComercio } from "@/hooks/useComercio";
 import { Label } from "@/components/ui/label";
+import { useComercio } from "@/hooks/useComercio";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useComercio } from "@/hooks/useComercio";
 import { ChatText, Plus, Trash, PencilSimple } from "@phosphor-icons/react";
+import { useComercio } from "@/hooks/useComercio";
 import { useQuery, useMutation } from "convex/react";
+import { useComercio } from "@/hooks/useComercio";
 import { api } from "@convex/_generated/api";
-import { useKindeAuth } from "@kinde-oss/kinde-auth-react";
+import { useComercio } from "@/hooks/useComercio";
 import { useState } from "react";
+import { useComercio } from "@/hooks/useComercio";
 import { toast } from "sonner";
+import { useComercio } from "@/hooks/useComercio";
 import { Id } from "@convex/_generated/dataModel";
+import { useComercio } from "@/hooks/useComercio";
 import { ConfirmationDialog } from "@/components/ConfirmationDialog";
+import { useComercio } from "@/hooks/useComercio";
 
 export function AutomatedMessagesSettings() {
-    const { user } = useKindeAuth();
-    const userId = user?.id;
-    const comercio = useQuery(api.comercios.getByUserId, userId ? { userId } : "skip");
+    const { comercio } = useComercio();
     const plantillas = useQuery(api.plantillas.list, comercio ? { comercio_id: comercio._id } : "skip");
 
     const createPlantilla = useMutation(api.plantillas.create);

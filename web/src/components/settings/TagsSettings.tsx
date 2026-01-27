@@ -1,16 +1,27 @@
 import { Button } from "@/components/ui/button";
+import { useComercio } from "@/hooks/useComercio";
 import { Input } from "@/components/ui/input";
+import { useComercio } from "@/hooks/useComercio";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useComercio } from "@/hooks/useComercio";
 import { Label } from "@/components/ui/label";
+import { useComercio } from "@/hooks/useComercio";
 import { Tag, Trash, Plus, PencilSimple } from "@phosphor-icons/react";
+import { useComercio } from "@/hooks/useComercio";
 import { useQuery, useMutation } from "convex/react";
+import { useComercio } from "@/hooks/useComercio";
 import { api } from "@convex/_generated/api";
-import { useKindeAuth } from "@kinde-oss/kinde-auth-react";
+import { useComercio } from "@/hooks/useComercio";
 import { useState } from "react";
+import { useComercio } from "@/hooks/useComercio";
 import { toast } from "sonner";
+import { useComercio } from "@/hooks/useComercio";
 import { cn } from "@/lib/utils";
+import { useComercio } from "@/hooks/useComercio";
 import { Id } from "@convex/_generated/dataModel";
+import { useComercio } from "@/hooks/useComercio";
 import { ConfirmationDialog } from "@/components/ConfirmationDialog";
+import { useComercio } from "@/hooks/useComercio";
 
 const COLORS = [
     '#00754A', '#EF4444', '#F59E0B', '#3B82F6',
@@ -18,9 +29,7 @@ const COLORS = [
 ];
 
 export function TagsSettings() {
-    const { user } = useKindeAuth();
-    const userId = user?.id;
-    const comercio = useQuery(api.comercios.getByUserId, userId ? { userId } : "skip");
+    const { comercio } = useComercio();
     const etiquetas = useQuery(api.etiquetas.listByComercio, comercio ? { comercio_id: comercio._id } : "skip");
 
     const createEtiqueta = useMutation(api.etiquetas.create);

@@ -1,6 +1,5 @@
 import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
-import { useKindeAuth } from "@kinde-oss/kinde-auth-react";
 import { WelcomeHeader } from "@/components/dashboard/WelcomeHeader";
 import { CommandCards } from "@/components/dashboard/CommandCards";
 import { AiImpactCard } from "@/components/dashboard/AiImpactCard";
@@ -13,11 +12,10 @@ import { ArrowsClockwise } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
+import { useComercio } from "@/hooks/useComercio";
 
 export default function DashboardHome() {
-    const { user } = useKindeAuth();
-    const userId = user?.id;
-    const comercio = useQuery(api.comercios.getByUserId, userId ? { userId } : "skip");
+    const { comercio, isLoading: isComercioLoading } = useComercio();
     const stats = useQuery(api.dashboard.getOverviewStats, comercio ? { comercio_id: comercio._id } : "skip");
     const [isReloading, setIsReloading] = useState(false);
 
@@ -50,7 +48,8 @@ export default function DashboardHome() {
         right: rightContent
     });
 
-    if (!comercio || stats === undefined) {
+
+    if (isComercioLoading || stats === undefined || !comercio) {
         return (
             <div className="space-y-6 max-w-7xl mx-auto">
                 <div className="flex justify-between items-center mb-8">

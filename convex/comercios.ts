@@ -44,15 +44,52 @@ export const getByUserId = query({
     handler: async (ctx, args) => {
         return await ctx.db
             .query("comercios")
-            .withIndex("by_user", (q) => q.eq("clerk_user_id", args.userId))
+            .withIndex("by_user", (q) => q.eq("auth_user_id", args.userId))
             .first();
+    },
+});
+
+// Obtener o crear comercio automáticamente (para usuarios nuevos)
+export const getOrCreateComercio = mutation({
+    args: {
+        userId: v.string(),
+        userEmail: v.optional(v.string()),
+    },
+    handler: async (ctx, args) => {
+        // Intentar obtener comercio existente
+        const existing = await ctx.db
+            .query("comercios")
+            .withIndex("by_user", (q) => q.eq("auth_user_id", args.userId))
+            .first();
+
+        if (existing) {
+            return existing;
+        }
+
+        // Si no existe, crear uno nuevo con datos por defecto
+        const comercioId = await ctx.db.insert("comercios", {
+            auth_user_id: args.userId,
+            nombre_comercio: "Mi Negocio",
+            descripcion_corta: "Configura tu negocio en la sección de ajustes",
+            nombre_asistente: "Asistente",
+            prompt_personalidad: "Eres un asistente amable y profesional que ayuda a los clientes con sus pedidos.",
+            ia_activa: true,
+            imagenes_menu: [],
+            creditos: 20, // Créditos iniciales
+            pago_efectivo: true,
+            pago_transferencia: false,
+        });
+
+        // Retornar el comercio recién creado
+        const newComercio = await ctx.db.get(comercioId);
+        return newComercio;
     },
 });
 
 // Crear comercio completo con datos de onboarding
 export const createWithOnboarding = mutation({
     args: {
-        clerk_user_id: v.string(),
+        auth_user_id: v.string(),
         nombre_comercio: v.string(),
         descripcion_corta: v.string(),
         ciudad: v.string(),
@@ -72,7 +109,7 @@ export const createWithOnboarding = mutation({
     handler: async (ctx, args) => {
         // 1. Crear comercio
         const comercioId = await ctx.db.insert("comercios", {
-            clerk_user_id: args.clerk_user_id,
+            auth_user_id: args.auth_user_id,
             nombre_comercio: args.nombre_comercio,
             descripcion_corta: args.descripcion_corta,
             ciudad: args.ciudad,
@@ -129,12 +166,12 @@ export const otorgarCreditos = mutation({
 // Para inicializar un comercio de prueba si no existe
 export const create = mutation({
     args: {
-        clerk_user_id: v.string(),
+        auth_user_id: v.string(),
         nombre_comercio: v.string(),
     },
     handler: async (ctx, args) => {
         return await ctx.db.insert("comercios", {
-            clerk_user_id: args.clerk_user_id,
+            auth_user_id: args.auth_user_id,
             nombre_comercio: args.nombre_comercio,
             imagenes_menu: [],
             creditos: 10,

@@ -7,11 +7,15 @@ import {
     House,
 } from "@phosphor-icons/react";
 import { Link, useLocation } from "react-router-dom";
+import { useComercio } from "@/hooks/useComercio";
 import { cn } from "@/lib/utils";
+import { useComercio } from "@/hooks/useComercio";
 import { motion } from "framer-motion";
+import { useComercio } from "@/hooks/useComercio";
 import { useQuery } from "convex/react";
+import { useComercio } from "@/hooks/useComercio";
 import { api } from "@convex/_generated/api";
-import { useKindeAuth } from "@kinde-oss/kinde-auth-react";
+import { useComercio } from "@/hooks/useComercio";
 
 const navItems = [
     { title: "Inicio", icon: House, url: "/overview" },
@@ -24,9 +28,7 @@ const navItems = [
 
 export function AppSidebar({ className }: { className?: string }) {
     const location = useLocation();
-    const { user } = useKindeAuth();
-    const userId = user?.id;
-    const comercio = useQuery(api.comercios.getByUserId, userId ? { userId } : "skip");
+    const { comercio } = useComercio();
     const badgeCounts = useQuery(api.stats.getNavbarBadgeCounts, comercio ? { comercio_id: comercio._id } : "skip");
 
     const navItemsWithBadges = navItems.map(item => {

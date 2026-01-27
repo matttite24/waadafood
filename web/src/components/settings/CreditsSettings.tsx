@@ -1,17 +1,22 @@
 import { Button } from "@/components/ui/button";
+import { useComercio } from "@/hooks/useComercio";
 import { Progress } from "@/components/ui/progress";
+import { useComercio } from "@/hooks/useComercio";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useComercio } from "@/hooks/useComercio";
 import { Lightning, Warning, CheckCircle, PlusCircle, Crown } from "@phosphor-icons/react";
+import { useComercio } from "@/hooks/useComercio";
 import { useQuery, useMutation } from "convex/react";
+import { useComercio } from "@/hooks/useComercio";
 import { api } from "@convex/_generated/api";
-import { useKindeAuth } from "@kinde-oss/kinde-auth-react";
+import { useComercio } from "@/hooks/useComercio";
 import { toast } from "sonner";
+import { useComercio } from "@/hooks/useComercio";
 import { cn } from "@/lib/utils";
+import { useComercio } from "@/hooks/useComercio";
 
 export function CreditsSettings() {
-    const { user } = useKindeAuth();
-    const userId = user?.id;
-    const comercio = useQuery(api.comercios.getByUserId, userId ? { userId } : "skip");
+    const { comercio } = useComercio();
     const otorgarCreditos = useMutation(api.comercios.otorgarCreditos);
 
     if (!comercio) return <div>Cargando...</div>;

@@ -4,7 +4,6 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { Id } from "@convex/_generated/dataModel";
-import { useKindeAuth } from "@kinde-oss/kinde-auth-react";
 import { useHeaderContent } from "@/hooks/use-header";
 import { DateFilters, DateFilterType } from "@/components/pedidos/DateFilters";
 import { OrderKanban } from "@/components/pedidos/OrderKanban";
@@ -13,10 +12,9 @@ import { Package, ArrowsClockwise } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useComercio } from "@/hooks/useComercio";
 
 export default function PedidosPage() {
-    const { user } = useKindeAuth();
-    const userId = user?.id;
     const [filtroFecha, setFiltroFecha] = useState<DateFilterType>("hoy");
     const [selectedClienteId, setSelectedClienteId] = useState<Id<"clientes"> | null>(null);
     const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -32,7 +30,7 @@ export default function PedidosPage() {
     };
 
     // 1. Get Commerce ID
-    const comercio = useQuery(api.comercios.getByUserId, userId ? { userId } : "skip");
+    const { comercio, isLoading: isComercioLoading } = useComercio();
 
     // 2. Get Orders (dependent on commerce)
     const pedidos = useQuery(api.pedidos.list, comercio ? { comercio_id: comercio._id } : "skip");
@@ -110,7 +108,7 @@ export default function PedidosPage() {
         right: rightContent
     });
 
-    if (pedidos === undefined || comercio === undefined) {
+    if (isComercioLoading || pedidos === undefined || !comercio) {
         return (
             <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
                 <div className="relative">
