@@ -1,5 +1,5 @@
-// Production build trigger v1.0.9 - Final Unblocked
-import { StrictMode } from 'react';
+// Production build trigger v1.1.0 - Auth Debugging
+import { StrictMode, useMemo } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { KindeProvider, useKindeAuth } from "@kinde-oss/kinde-auth-react";
@@ -18,7 +18,7 @@ const convexUrl = isProduction
 
 console.log("📍 Current Hostname:", hostname);
 console.log("🌐 Selected Convex URL:", convexUrl);
-console.log("🚀 App Version: 1.0.9");
+console.log("🚀 App Version: 1.1.0");
 
 if (!convexUrl) {
     console.error("❌ ERROR: VITE_CONVEX_URL is missing!");
@@ -30,18 +30,20 @@ const convex = new ConvexReactClient(convexUrl || "https://placeholder.convex.cl
 function ConvexProviderWithKinde({ children }: { children: React.ReactNode }) {
     const { getToken, isLoading, isAuthenticated } = useKindeAuth();
 
+    // Memoize the auth object to prevent infinite loops
+    const authConfig = useMemo(() => ({
+        isLoading,
+        isAuthenticated,
+        fetchAccessToken: async () => {
+            const token = await getToken();
+            return token || null;
+        },
+    }), [isLoading, isAuthenticated, getToken]);
+
     return (
         <ConvexProviderWithAuth
             client={convex}
-            useAuth={() => ({
-                isLoading,
-                isAuthenticated,
-                fetchAccessToken: async () => {
-                    const token = await getToken();
-                    if (!token) console.warn("⚠️ No token received from Kinde");
-                    return token || null;
-                },
-            })}
+            useAuth={() => authConfig}
         >
             {children}
         </ConvexProviderWithAuth>
