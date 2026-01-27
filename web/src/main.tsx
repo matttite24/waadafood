@@ -1,4 +1,4 @@
-// Production build trigger v1.0.2 - Stable Kinde Auth
+// Production build trigger v1.0.3 - Final Auth Sync
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
