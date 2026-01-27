@@ -2,17 +2,13 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import { ClerkProvider, useAuth } from '@clerk/clerk-react';
-import { ConvexProviderWithClerk } from 'convex/react-clerk';
+import { KindeProvider, useKindeAuth } from "@kinde-oss/kinde-auth-react";
+import { ConvexProviderWithAuth } from "convex/react";
 import { ConvexReactClient } from 'convex/react';
 import App from './App';
 import './styles/index.css';
 
-console.log("🔗 VITE_CONVEX_URL present:", !!import.meta.env.VITE_CONVEX_URL);
-console.log("🔑 VITE_CLERK_PUBLISHABLE_KEY present:", !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
-
 const convexUrl = import.meta.env.VITE_CONVEX_URL;
-const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
 if (!convexUrl) {
     console.error("❌ ERROR: VITE_CONVEX_URL is missing! The app will not work.");
@@ -20,17 +16,36 @@ if (!convexUrl) {
 
 const convex = new ConvexReactClient(convexUrl || "https://placeholder.convex.cloud");
 
-// Determine the domain for Clerk (needed for custom domains in production)
-const domain = window.location.hostname.includes("localhost") ? undefined : "waadafood.com";
+// Wrapper for Convex and Kinde integration
+function ConvexProviderWithKinde({ children }: { children: React.ReactNode }) {
+    const { getToken, isLoading } = useKindeAuth();
+
+    return (
+        <ConvexProviderWithAuth
+            client={convex}
+            fetchToken={async () => {
+                const token = await getToken();
+                return token || null;
+            }}
+        >
+            {children}
+        </ConvexProviderWithAuth>
+    );
+}
 
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
-        <ClerkProvider publishableKey={clerkPubKey} domain={domain}>
-            <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
+        <KindeProvider
+            clientId="623e33511e11481486f9bb40fb2d7cac"
+            domain="https://waadafood.kinde.com"
+            logoutUri={window.location.origin}
+            redirectUri={window.location.origin}
+        >
+            <ConvexProviderWithKinde>
                 <BrowserRouter>
                     <App />
                 </BrowserRouter>
-            </ConvexProviderWithClerk>
-        </ClerkProvider>
+            </ConvexProviderWithKinde>
+        </KindeProvider>
     </StrictMode>
 );

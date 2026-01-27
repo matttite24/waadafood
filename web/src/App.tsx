@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
-import { SignedIn, SignedOut, RedirectToSignIn } from '@clerk/clerk-react';
+import { useKindeAuth } from "@kinde-oss/kinde-auth-react";
 import { Toaster } from 'sonner';
 import { DashboardLayout } from "./components/layout/DashboardLayout";
 import { ThemeProvider } from "./components/theme-provider";
@@ -16,19 +16,27 @@ import MenuPage from "./pages/dashboard/MenuPage";
 import SettingsPage from "./pages/dashboard/SettingsPage";
 import SandboxPage from "./pages/SandboxPage";
 
-// Wrapper for protected routes to apply layout
+// Wrapper for protected routes using Kinde
 const ProtectedLayout = () => {
+    const { isAuthenticated, isLoading, login } = useKindeAuth();
+
+    if (isLoading) {
+        return (
+            <div className="flex h-screen w-screen items-center justify-center bg-background">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+            </div>
+        );
+    }
+
+    if (!isAuthenticated) {
+        login();
+        return null;
+    }
+
     return (
-        <>
-            <SignedIn>
-                <DashboardLayout>
-                    <Outlet />
-                </DashboardLayout>
-            </SignedIn>
-            <SignedOut>
-                <RedirectToSignIn />
-            </SignedOut>
-        </>
+        <DashboardLayout>
+            <Outlet />
+        </DashboardLayout>
     );
 };
 
@@ -43,43 +51,54 @@ function App() {
         return null;
     }
 
-    console.log("📍 Current Hostname:", hostname);
-    console.log("🚀 Is App Subdomain:", isAppSubdomain);
-    console.log("🔗 VITE_CONVEX_URL:", !!import.meta.env.VITE_CONVEX_URL);
+    function App() {
+        const hostname = window.location.hostname;
+        const isAppSubdomain = hostname.startsWith('app.') || hostname.includes('waadafood.matttite24.workers.dev') || hostname.includes('localhost');
+        const isMainDomain = hostname === 'waadafood.com' || hostname === 'www.waadafood.com';
 
-    return (
-        <ThemeProvider defaultTheme="light" storageKey="chatbox-theme">
-            <div className="min-h-screen bg-background font-sans text-foreground">
-                <Toaster position="bottom-right" richColors />
+        // Redirigir al subdominio app si se intenta acceder a rutas de la app desde el dominio principal
+        if (isMainDomain && window.location.pathname !== '/' && window.location.pathname !== '/home') {
+            window.location.replace(`https://app.waadafood.com${window.location.pathname}${window.location.search}`);
+            return null;
+        }
 
-                <Routes>
-                    {/* Public Routes */}
-                    <Route
-                        path="/"
-                        element={isAppSubdomain ? <Navigate to="/overview" replace /> : <LandingPage />}
-                    />
-                    <Route path="/home" element={<LandingPage />} />
-                    <Route path="/sign-in/*" element={<SignInPage />} />
-                    <Route path="/sign-up/*" element={<SignUpPage />} />
-                    <Route path="/sandbox/:comercioId" element={<SandboxPage />} />
+        console.log("📍 Current Hostname:", hostname);
+        console.log("🚀 Is App Subdomain:", isAppSubdomain);
+        console.log("🔗 VITE_CONVEX_URL:", !!import.meta.env.VITE_CONVEX_URL);
 
-                    {/* Dashboard / App Routes (Protected & Clean URLs) */}
-                    <Route element={<ProtectedLayout />}>
-                        <Route path="/overview" element={<DashboardHome />} />
-                        <Route path="/chats" element={<ChatsPage />} />
-                        <Route path="/pedidos" element={<PedidosPage />} />
-                        <Route path="/metricas" element={<MetricsPage />} />
-                        <Route path="/menu" element={<MenuPage />} />
-                        <Route path="/configuracion" element={<SettingsPage />} />
-                    </Route>
+        return (
+            <ThemeProvider defaultTheme="light" storageKey="chatbox-theme">
+                <div className="min-h-screen bg-background font-sans text-foreground">
+                    <Toaster position="bottom-right" richColors />
 
-                    {/* Redirects */}
-                    <Route path="/dashboard" element={<Navigate to="/overview" replace />} />
-                    <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-            </div>
-        </ThemeProvider>
-    );
-}
+                    <Routes>
+                        {/* Public Routes */}
+                        <Route
+                            path="/"
+                            element={isAppSubdomain ? <Navigate to="/overview" replace /> : <LandingPage />}
+                        />
+                        <Route path="/home" element={<LandingPage />} />
+                        <Route path="/sign-in/*" element={<SignInPage />} />
+                        <Route path="/sign-up/*" element={<SignUpPage />} />
+                        <Route path="/sandbox/:comercioId" element={<SandboxPage />} />
 
-export default App;
+                        {/* Dashboard / App Routes (Protected & Clean URLs) */}
+                        <Route element={<ProtectedLayout />}>
+                            <Route path="/overview" element={<DashboardHome />} />
+                            <Route path="/chats" element={<ChatsPage />} />
+                            <Route path="/pedidos" element={<PedidosPage />} />
+                            <Route path="/metricas" element={<MetricsPage />} />
+                            <Route path="/menu" element={<MenuPage />} />
+                            <Route path="/configuracion" element={<SettingsPage />} />
+                        </Route>
+
+                        {/* Redirects */}
+                        <Route path="/dashboard" element={<Navigate to="/overview" replace />} />
+                        <Route path="*" element={<Navigate to="/" replace />} />
+                    </Routes>
+                </div>
+            </ThemeProvider>
+        );
+    }
+
+    export default App;
