@@ -10,8 +10,9 @@ import './styles/index.css';
 
 const convexUrl = import.meta.env.VITE_CONVEX_URL;
 
+console.log("🌐 Production Convex URL:", convexUrl);
 if (!convexUrl) {
-    console.error("❌ ERROR: VITE_CONVEX_URL is missing! The app will not work.");
+    console.error("❌ ERROR: VITE_CONVEX_URL is missing! Fallback: placeholder.cloud");
 }
 
 const convex = new ConvexReactClient(convexUrl || "https://placeholder.convex.cloud");
@@ -28,6 +29,7 @@ function ConvexProviderWithKinde({ children }: { children: React.ReactNode }) {
                 isAuthenticated,
                 fetchAccessToken: async () => {
                     const token = await getToken();
+                    if (!token) console.warn("⚠️ No token received from Kinde");
                     return token || null;
                 },
             })}
@@ -44,7 +46,7 @@ createRoot(document.getElementById('root')!).render(
             domain="https://waadafood.kinde.com"
             logoutUri={window.location.origin}
             redirectUri={window.location.origin}
-            audience="convex"
+            audience="623e33511e11481486f9bb40fb2d7cac"
         >
             <ConvexProviderWithKinde>
                 <BrowserRouter>
