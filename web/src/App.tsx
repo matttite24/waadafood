@@ -51,54 +51,43 @@ function App() {
         return null;
     }
 
-    function App() {
-        const hostname = window.location.hostname;
-        const isAppSubdomain = hostname.startsWith('app.') || hostname.includes('waadafood.matttite24.workers.dev') || hostname.includes('localhost');
-        const isMainDomain = hostname === 'waadafood.com' || hostname === 'www.waadafood.com';
+    console.log("📍 Current Hostname:", hostname);
+    console.log("🚀 Is App Subdomain:", isAppSubdomain);
+    console.log("🔗 VITE_CONVEX_URL:", !!import.meta.env.VITE_CONVEX_URL);
 
-        // Redirigir al subdominio app si se intenta acceder a rutas de la app desde el dominio principal
-        if (isMainDomain && window.location.pathname !== '/' && window.location.pathname !== '/home') {
-            window.location.replace(`https://app.waadafood.com${window.location.pathname}${window.location.search}`);
-            return null;
-        }
+    return (
+        <ThemeProvider defaultTheme="light" storageKey="chatbox-theme">
+            <div className="min-h-screen bg-background font-sans text-foreground">
+                <Toaster position="bottom-right" richColors />
 
-        console.log("📍 Current Hostname:", hostname);
-        console.log("🚀 Is App Subdomain:", isAppSubdomain);
-        console.log("🔗 VITE_CONVEX_URL:", !!import.meta.env.VITE_CONVEX_URL);
+                <Routes>
+                    {/* Public Routes */}
+                    <Route
+                        path="/"
+                        element={isAppSubdomain ? <Navigate to="/overview" replace /> : <LandingPage />}
+                    />
+                    <Route path="/home" element={<LandingPage />} />
+                    <Route path="/sign-in/*" element={<SignInPage />} />
+                    <Route path="/sign-up/*" element={<SignUpPage />} />
+                    <Route path="/sandbox/:comercioId" element={<SandboxPage />} />
 
-        return (
-            <ThemeProvider defaultTheme="light" storageKey="chatbox-theme">
-                <div className="min-h-screen bg-background font-sans text-foreground">
-                    <Toaster position="bottom-right" richColors />
+                    {/* Dashboard / App Routes (Protected & Clean URLs) */}
+                    <Route element={<ProtectedLayout />}>
+                        <Route path="/overview" element={<DashboardHome />} />
+                        <Route path="/chats" element={<ChatsPage />} />
+                        <Route path="/pedidos" element={<PedidosPage />} />
+                        <Route path="/metricas" element={<MetricsPage />} />
+                        <Route path="/menu" element={<MenuPage />} />
+                        <Route path="/configuracion" element={<SettingsPage />} />
+                    </Route>
 
-                    <Routes>
-                        {/* Public Routes */}
-                        <Route
-                            path="/"
-                            element={isAppSubdomain ? <Navigate to="/overview" replace /> : <LandingPage />}
-                        />
-                        <Route path="/home" element={<LandingPage />} />
-                        <Route path="/sign-in/*" element={<SignInPage />} />
-                        <Route path="/sign-up/*" element={<SignUpPage />} />
-                        <Route path="/sandbox/:comercioId" element={<SandboxPage />} />
+                    {/* Redirects */}
+                    <Route path="/dashboard" element={<Navigate to="/overview" replace />} />
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+            </div>
+        </ThemeProvider>
+    );
+}
 
-                        {/* Dashboard / App Routes (Protected & Clean URLs) */}
-                        <Route element={<ProtectedLayout />}>
-                            <Route path="/overview" element={<DashboardHome />} />
-                            <Route path="/chats" element={<ChatsPage />} />
-                            <Route path="/pedidos" element={<PedidosPage />} />
-                            <Route path="/metricas" element={<MetricsPage />} />
-                            <Route path="/menu" element={<MenuPage />} />
-                            <Route path="/configuracion" element={<SettingsPage />} />
-                        </Route>
-
-                        {/* Redirects */}
-                        <Route path="/dashboard" element={<Navigate to="/overview" replace />} />
-                        <Route path="*" element={<Navigate to="/" replace />} />
-                    </Routes>
-                </div>
-            </ThemeProvider>
-        );
-    }
-
-    export default App;
+export default App;

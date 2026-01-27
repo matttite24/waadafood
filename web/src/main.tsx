@@ -18,15 +18,19 @@ const convex = new ConvexReactClient(convexUrl || "https://placeholder.convex.cl
 
 // Wrapper for Convex and Kinde integration
 function ConvexProviderWithKinde({ children }: { children: React.ReactNode }) {
-    const { getToken, isLoading } = useKindeAuth();
+    const { getToken, isLoading, isAuthenticated } = useKindeAuth();
 
     return (
         <ConvexProviderWithAuth
             client={convex}
-            fetchToken={async () => {
-                const token = await getToken();
-                return token || null;
-            }}
+            useAuth={() => ({
+                isLoading,
+                isAuthenticated,
+                fetchAccessToken: async () => {
+                    const token = await getToken();
+                    return token || null;
+                },
+            })}
         >
             {children}
         </ConvexProviderWithAuth>
