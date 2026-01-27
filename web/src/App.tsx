@@ -33,7 +33,11 @@ const ProtectedLayout = () => {
 };
 
 function App() {
-    const isAppSubdomain = window.location.hostname.startsWith('app.');
+    const hostname = window.location.hostname;
+    const isAppSubdomain = hostname.startsWith('app.') || hostname.includes('waadafood.matttite24.workers.dev');
+
+    console.log("📍 Current Hostname:", hostname);
+    console.log("🚀 Is App Subdomain:", isAppSubdomain);
 
     return (
         <ThemeProvider defaultTheme="light" storageKey="chatbox-theme">
