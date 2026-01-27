@@ -6,7 +6,11 @@ export default function SignUpPage() {
 
     useEffect(() => {
         if (!isLoading && !isAuthenticated) {
-            register();
+            register({
+                authUrlParams: {
+                    audience: "convex"
+                }
+            });
         }
     }, [isLoading, isAuthenticated, register]);
 

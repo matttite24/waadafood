@@ -1,12 +1,16 @@
 import { useKindeAuth } from "@kinde-oss/kinde-auth-react";
 import { useEffect } from "react";
 
-export default function SignInPage() {
+export default function SignInPage() { // Production build trigger v1.0.6 - Explicit Audience
     const { login, isAuthenticated, isLoading } = useKindeAuth();
 
     useEffect(() => {
         if (!isLoading && !isAuthenticated) {
-            login();
+            login({
+                authUrlParams: {
+                    audience: "convex"
+                }
+            });
         }
     }, [isLoading, isAuthenticated, login]);
 
