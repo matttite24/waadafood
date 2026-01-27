@@ -39,7 +39,7 @@ function App() {
 
     // Redirigir al subdominio app si se intenta acceder a rutas de la app desde el dominio principal
     if (isMainDomain && window.location.pathname !== '/' && window.location.pathname !== '/home') {
-        window.location.href = `https://app.waadafood.com${window.location.pathname}${window.location.search}`;
+        window.location.replace(`https://app.waadafood.com${window.location.pathname}${window.location.search}`);
         return null;
     }
 

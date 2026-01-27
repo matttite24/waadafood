@@ -1,19 +1,18 @@
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { ArrowRight, CheckCircle, ShieldCheck, Lightning } from "@phosphor-icons/react";
-import { useAuth } from "@clerk/clerk-react";
-import { useNavigate } from "react-router-dom";
 
 export default function LandingPage() {
-    const { isSignedIn } = useAuth();
-    const navigate = useNavigate();
+    const handleLogin = () => {
+        window.location.href = "https://app.waadafood.com/sign-in";
+    };
 
-    const handleCtaClick = () => {
-        if (isSignedIn) {
-            navigate("/overview");
-        } else {
-            navigate("/sign-in");
-        }
+    const handleSignUp = () => {
+        window.location.href = "https://app.waadafood.com/sign-up";
+    };
+
+    const handleStart = () => {
+        window.location.href = "https://app.waadafood.com/overview";
     };
 
     return (
@@ -27,10 +26,10 @@ export default function LandingPage() {
                     <span className="font-display text-xl font-bold tracking-tight">Chatbox</span>
                 </div>
                 <div className="flex items-center gap-4">
-                    <Button variant="ghost" size="sm" onClick={() => navigate("/sign-in")}>
+                    <Button variant="ghost" size="sm" onClick={handleLogin}>
                         Iniciar Sesión
                     </Button>
-                    <Button size="sm" onClick={() => navigate("/sign-up")} className="rounded-full px-6">
+                    <Button size="sm" onClick={handleSignUp} className="rounded-full px-6">
                         Comenzar
                     </Button>
                 </div>
@@ -67,9 +66,9 @@ export default function LandingPage() {
                                 <Button
                                     size="lg"
                                     className="h-14 px-8 text-lg rounded-full shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all font-medium"
-                                    onClick={handleCtaClick}
+                                    onClick={handleStart}
                                 >
-                                    {isSignedIn ? "Ir al Dashboard" : "Empezar Gratis"}
+                                    Empezar Gratis
                                     <ArrowRight className="ml-2 h-5 w-5" weight="bold" />
                                 </Button>
                                 <Button
