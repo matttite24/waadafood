@@ -1,4 +1,4 @@
-// Production build trigger v1.0.4 - Visual Verify
+// Production build trigger v1.0.5 - Deployment Fixed
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
