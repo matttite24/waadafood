@@ -5,13 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Bank, Money } from "@phosphor-icons/react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
-import { useAuth } from "@clerk/clerk-react";
+import { useKindeAuth } from "@kinde-oss/kinde-auth-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Check, Robot } from "@phosphor-icons/react";
 
 export function PaymentsSettings() {
-    const { userId } = useAuth();
+    const { user } = useKindeAuth();
+    const userId = user?.id;
     const comercio = useQuery(api.comercios.getByUserId, userId ? { userId } : "skip");
     const updateComercio = useMutation(api.comercios.update);
 

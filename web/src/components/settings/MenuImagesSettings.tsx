@@ -6,12 +6,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Image as ImageIcon, X, Clock, UploadSimple } from "@phosphor-icons/react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
-import { useAuth } from "@clerk/clerk-react";
+import { useKindeAuth } from "@kinde-oss/kinde-auth-react";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 
 export function MenuImagesSettings() {
-    const { userId } = useAuth();
+    const { user } = useKindeAuth();
+    const userId = user?.id;
     const comercio = useQuery(api.comercios.getByUserId, userId ? { userId } : "skip");
     const updateComercio = useMutation(api.comercios.update);
     const generateUploadUrl = useMutation(api.files.generateUploadUrl);

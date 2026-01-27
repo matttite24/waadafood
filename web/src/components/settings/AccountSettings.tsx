@@ -1,18 +1,15 @@
-"use client";
-
-import { useUser, useAuth } from "@clerk/clerk-react";
+import { useKindeAuth } from "@kinde-oss/kinde-auth-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { SignOut, Key, Trash } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 export function AccountSettings() {
-    const { user } = useUser();
-    const { signOut } = useAuth();
+    const { user, logout } = useKindeAuth();
 
     const handleSignOut = async () => {
         try {
-            await signOut();
+            await logout();
             toast.success("Sesión cerrada");
         } catch (error) {
             toast.error("Error al cerrar sesión");
@@ -29,14 +26,14 @@ export function AccountSettings() {
             {/* Perfil */}
             <div className="flex flex-col items-center p-8 bg-background border rounded-[2.5rem] space-y-4 shadow-sm">
                 <Avatar className="h-24 w-24 border-4 border-primary/10">
-                    <AvatarImage src={user?.imageUrl} />
+                    <AvatarImage src={user?.picture || undefined} />
                     <AvatarFallback className="bg-primary/5 text-primary text-2xl font-bold">
-                        {user?.firstName?.charAt(0)}
+                        {(user as any)?.given_name?.charAt(0) || "U"}
                     </AvatarFallback>
                 </Avatar>
                 <div className="text-center">
-                    <h4 className="text-2xl font-bold tracking-tight">{user?.fullName}</h4>
-                    <p className="text-muted-foreground text-sm font-medium">{user?.primaryEmailAddress?.emailAddress}</p>
+                    <h4 className="text-2xl font-bold tracking-tight">{(user as any)?.given_name} {(user as any)?.family_name}</h4>
+                    <p className="text-muted-foreground text-sm font-medium">{user?.email}</p>
                 </div>
                 <Button
                     variant="outline"
@@ -59,7 +56,7 @@ export function AccountSettings() {
                             </div>
                             <div>
                                 <h5 className="font-bold text-sm">Contraseña</h5>
-                                <p className="text-xs text-muted-foreground">Gestionado vía Clerk Auth</p>
+                                <p className="text-xs text-muted-foreground">Gestionado vía Kinde Auth</p>
                             </div>
                         </div>
                         <Button variant="ghost" className="rounded-full text-primary font-bold text-xs">Cambiar</Button>

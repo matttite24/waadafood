@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
-import { useAuth } from "@clerk/clerk-react";
+import { useKindeAuth } from "@kinde-oss/kinde-auth-react";
 import { useHeaderContent } from "@/hooks/use-header";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { CategorySection } from "@/components/menu/CategorySection";
@@ -25,7 +25,8 @@ type Product = {
 };
 
 export default function MenuPage() {
-    const { userId } = useAuth();
+    const { user } = useKindeAuth();
+    const userId = user?.id;
     const [activeCategory, setActiveCategory] = useState<string>("Todas");
     const [selectedProduct, setSelectedProduct] = useState<Product | null | undefined>(undefined);
 

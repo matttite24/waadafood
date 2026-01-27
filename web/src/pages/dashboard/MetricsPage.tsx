@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { Id } from "@convex/_generated/dataModel";
-import { useAuth } from "@clerk/clerk-react";
+import { useKindeAuth } from "@kinde-oss/kinde-auth-react";
 import { useHeaderContent } from "@/hooks/use-header";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { ConversationSheet } from "@/components/pedidos/ConversationSheet";
@@ -28,7 +28,8 @@ import {
 } from "@/components/metrics/SummaryCards";
 
 export default function MetricsPage() {
-    const { userId } = useAuth();
+    const { user } = useKindeAuth();
+    const userId = user?.id;
     const [filtroFecha, setFiltroFecha] = useState<"hoy" | "ayer" | "7dias" | "30dias">("hoy");
     const [selectedClienteId, setSelectedClienteId] = useState<Id<"clientes"> | null>(null);
     const [isSheetOpen, setIsSheetOpen] = useState(false);

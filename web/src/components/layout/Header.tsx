@@ -5,7 +5,7 @@ import { Separator } from "@/components/ui/separator";
 import { useHeader } from "@/hooks/use-header";
 import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
-import { useAuth } from "@clerk/clerk-react";
+import { useKindeAuth } from "@kinde-oss/kinde-auth-react";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -21,7 +21,8 @@ import { es } from "date-fns/locale";
 
 export function Header() {
     const { centerContent, rightContent } = useHeader();
-    const { userId } = useAuth();
+    const { user } = useKindeAuth();
+    const userId = user?.id;
     const comercio = useQuery(api.comercios.getByUserId, userId ? { userId } : "skip");
     const notifications = useQuery(api.notifications.listItems, comercio ? { comercio_id: comercio._id } : "skip");
 

@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Tag, Trash, Plus, PencilSimple } from "@phosphor-icons/react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
-import { useAuth } from "@clerk/clerk-react";
+import { useKindeAuth } from "@kinde-oss/kinde-auth-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -18,7 +18,8 @@ const COLORS = [
 ];
 
 export function TagsSettings() {
-    const { userId } = useAuth();
+    const { user } = useKindeAuth();
+    const userId = user?.id;
     const comercio = useQuery(api.comercios.getByUserId, userId ? { userId } : "skip");
     const etiquetas = useQuery(api.etiquetas.listByComercio, comercio ? { comercio_id: comercio._id } : "skip");
 

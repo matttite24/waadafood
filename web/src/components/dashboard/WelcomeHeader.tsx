@@ -1,12 +1,12 @@
-import { useUser } from "@clerk/clerk-react";
+import { useKindeAuth } from "@kinde-oss/kinde-auth-react";
 
 interface WelcomeHeaderProps {
     businessName?: string;
 }
 
 export function WelcomeHeader({ businessName }: WelcomeHeaderProps) {
-    const { user } = useUser();
-    const firstName = user?.firstName || "Usuario";
+    const { user } = useKindeAuth();
+    const firstName = (user as any)?.given_name || "Usuario";
 
     const getGreeting = () => {
         const hour = new Date().getHours();

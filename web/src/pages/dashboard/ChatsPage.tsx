@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, usePaginatedQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
-import { useAuth } from "@clerk/clerk-react";
+import { useKindeAuth } from "@kinde-oss/kinde-auth-react";
 import { Id } from "@convex/_generated/dataModel";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -16,7 +16,8 @@ import { ContactPanel } from "@/components/chat/ContactPanel";
 const FILTROS = ['Todos', 'Agente iA', 'Urgente', 'Humano', 'No leídos', 'Archivados'];
 
 export default function ChatsPage() {
-    const { userId } = useAuth();
+    const { user } = useKindeAuth();
+    const userId = user?.id;
     const [selectedContactId, setSelectedContactId] = useState<Id<"clientes"> | null>(null);
     const [showInfoPanel, setShowInfoPanel] = useState(true);
     const [activeFiltro, setActiveFiltro] = useState('Todos');

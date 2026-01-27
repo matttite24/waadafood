@@ -8,14 +8,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ChatText, Plus, Trash, PencilSimple } from "@phosphor-icons/react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
-import { useAuth } from "@clerk/clerk-react";
+import { useKindeAuth } from "@kinde-oss/kinde-auth-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Id } from "@convex/_generated/dataModel";
 import { ConfirmationDialog } from "@/components/ConfirmationDialog";
 
 export function AutomatedMessagesSettings() {
-    const { userId } = useAuth();
+    const { user } = useKindeAuth();
+    const userId = user?.id;
     const comercio = useQuery(api.comercios.getByUserId, userId ? { userId } : "skip");
     const plantillas = useQuery(api.plantillas.list, comercio ? { comercio_id: comercio._id } : "skip");
 

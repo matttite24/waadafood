@@ -1,6 +1,6 @@
 import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
-import { useAuth } from "@clerk/clerk-react";
+import { useKindeAuth } from "@kinde-oss/kinde-auth-react";
 import { WelcomeHeader } from "@/components/dashboard/WelcomeHeader";
 import { CommandCards } from "@/components/dashboard/CommandCards";
 import { AiImpactCard } from "@/components/dashboard/AiImpactCard";
@@ -15,7 +15,8 @@ import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 
 export default function DashboardHome() {
-    const { userId } = useAuth();
+    const { user } = useKindeAuth();
+    const userId = user?.id;
     const comercio = useQuery(api.comercios.getByUserId, userId ? { userId } : "skip");
     const stats = useQuery(api.dashboard.getOverviewStats, comercio ? { comercio_id: comercio._id } : "skip");
     const [isReloading, setIsReloading] = useState(false);

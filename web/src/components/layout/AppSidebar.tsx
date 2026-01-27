@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
-import { useAuth } from "@clerk/clerk-react";
+import { useKindeAuth } from "@kinde-oss/kinde-auth-react";
 
 const navItems = [
     { title: "Inicio", icon: House, url: "/overview" },
@@ -24,7 +24,8 @@ const navItems = [
 
 export function AppSidebar({ className }: { className?: string }) {
     const location = useLocation();
-    const { userId } = useAuth();
+    const { user } = useKindeAuth();
+    const userId = user?.id;
     const comercio = useQuery(api.comercios.getByUserId, userId ? { userId } : "skip");
     const badgeCounts = useQuery(api.stats.getNavbarBadgeCounts, comercio ? { comercio_id: comercio._id } : "skip");
 

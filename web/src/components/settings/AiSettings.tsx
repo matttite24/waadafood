@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Robot, Sparkle, Warning } from "@phosphor-icons/react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
-import { useAuth } from "@clerk/clerk-react";
+import { useKindeAuth } from "@kinde-oss/kinde-auth-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -30,7 +30,8 @@ import {
 import { SandboxChat } from "./SandboxChat";
 
 export function AiSettings() {
-    const { userId } = useAuth();
+    const { user } = useKindeAuth();
+    const userId = user?.id;
     const comercio = useQuery(api.comercios.getByUserId, userId ? { userId } : "skip");
     const updateComercio = useMutation(api.comercios.update);
 
