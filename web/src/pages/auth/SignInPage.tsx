@@ -7,9 +7,7 @@ export default function SignInPage() { // Production build trigger v1.0.6 - Expl
     useEffect(() => {
         if (!isLoading && !isAuthenticated) {
             login({
-                authUrlParams: {
-                    audience: "convex"
-                }
+                audience: "convex"
             });
         }
     }, [isLoading, isAuthenticated, login]);
