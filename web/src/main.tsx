@@ -54,7 +54,7 @@ createRoot(document.getElementById('root')!).render(
             domain="https://waadafood.kinde.com"
             logoutUri={window.location.origin}
             redirectUri={window.location.origin}
-            audience="623e33511e11481486f9bb40fb2d7cac"
+            audience="convex"
         >
             <ConvexProviderWithKinde>
                 <BrowserRouter>
