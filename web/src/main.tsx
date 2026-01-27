@@ -8,8 +8,17 @@ import { ConvexReactClient } from 'convex/react';
 import App from './App';
 import './styles/index.css';
 
-const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL);
+console.log("🔗 VITE_CONVEX_URL present:", !!import.meta.env.VITE_CONVEX_URL);
+console.log("🔑 VITE_CLERK_PUBLISHABLE_KEY present:", !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
+
+const convexUrl = import.meta.env.VITE_CONVEX_URL;
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+
+if (!convexUrl) {
+    console.error("❌ ERROR: VITE_CONVEX_URL is missing! The app will not work.");
+}
+
+const convex = new ConvexReactClient(convexUrl || "https://placeholder.convex.cloud");
 
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
