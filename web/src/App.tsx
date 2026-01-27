@@ -33,6 +33,8 @@ const ProtectedLayout = () => {
 };
 
 function App() {
+    const isAppSubdomain = window.location.hostname.startsWith('app.');
+
     return (
         <ThemeProvider defaultTheme="light" storageKey="chatbox-theme">
             <div className="min-h-screen bg-background font-sans text-foreground">
@@ -40,7 +42,11 @@ function App() {
 
                 <Routes>
                     {/* Public Routes */}
-                    <Route path="/" element={<LandingPage />} />
+                    <Route
+                        path="/"
+                        element={isAppSubdomain ? <Navigate to="/overview" replace /> : <LandingPage />}
+                    />
+                    <Route path="/home" element={<LandingPage />} />
                     <Route path="/sign-in/*" element={<SignInPage />} />
                     <Route path="/sign-up/*" element={<SignUpPage />} />
                     <Route path="/sandbox/:comercioId" element={<SandboxPage />} />
