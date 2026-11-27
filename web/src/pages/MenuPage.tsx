@@ -64,7 +64,7 @@ export default function MenuPage() {
                 {menu.products.map((p) => (
                     <li key={p.id} className={cn("flex items-center gap-3 rounded-2xl border bg-card p-3 shadow-[0_1px_2px_rgba(0,0,0,0.04)]", !p.available && "bg-muted/40")}>
                         <button className="flex min-w-0 flex-1 items-center gap-3 text-left" onClick={() => setEditing({ product: p, isNew: false })} aria-label={`Editar ${p.name}`}>
-                            <span className={cn("size-16 shrink-0 overflow-hidden rounded-xl border", !p.available && "opacity-50 grayscale")} style={{ background: p.color }}>
+                            <span className={cn("size-16 shrink-0 overflow-hidden rounded-xl border", !p.available && "opacity-50 grayscale")} style={{ background: menu.store.color }}>
                                 {p.image && <img src={`${KIOSKO_URL}/i/${p.image.key}-480.webp`} alt="" className="size-full object-cover" loading="lazy" />}
                             </span>
                             <span className="min-w-0">

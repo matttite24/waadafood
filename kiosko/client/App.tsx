@@ -96,8 +96,8 @@ export function App({ menu, open, preview }: Props) {
 
     if (flow.step === "home" || !product) return <Kiosko menu={menu} open={open} onPick={pick} />;
 
-    // Fondo de las pantallas del flujo: el color del producto o, si tiene foto, el color de la marca.
-    const bg = product.image ? safeColor(store.color, "#C8321F") : safeColor(product.color);
+    // Fondo de las pantallas del flujo: siempre el color de la marca.
+    const bg = safeColor(store.color, "#C8321F");
     const mode = flow.mode ?? "retiro";
     const total = Math.round((productTotal(product, sel) + deliveryFee(flow.mode ?? "retiro", store.delivery.fee)) * 100) / 100;
 

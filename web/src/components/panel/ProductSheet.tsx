@@ -6,12 +6,12 @@ import { Drawer, DrawerContent, DrawerFooter } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, PriceInput } from "@/components/ui/field";
-import { COLORS, ColorPicker } from "@/components/ui/color-picker";
+import { COLORS } from "@/components/ui/color-picker";
 import { IconButton, Section, SheetHead } from "./kit";
 import { IconAgregar, IconBajar, IconBorrar, IconFoto, IconSubir } from "@/components/icons";
 import { errorText } from "./PublishBar";
 import { processPhoto, uploadPhoto } from "@/lib/photo";
-import type { Store } from "./PanelLayout";
+import { useStore, type Store } from "./PanelLayout";
 
 export type Product = Store["draftMenu"]["products"][number];
 
@@ -70,6 +70,7 @@ export default function ProductSheet({
     const [askDelete, setAskDelete] = useState(false);
     const fileRef = useRef<HTMLInputElement>(null);
     const requestTickets = useAction(api.images.requestUploadTicket);
+    const brand = useStore().draftMenu.store.color;
 
     useEffect(() => {
         setP(product);
@@ -139,7 +140,7 @@ export default function ProductSheet({
 
                     <Section title="Foto">
                         <div className="flex items-center gap-4">
-                            <div className="size-24 shrink-0 overflow-hidden rounded-xl border" style={{ background: p.image ? `url(${p.image.lqip}) center/cover` : p.color }}>
+                            <div className="size-24 shrink-0 overflow-hidden rounded-xl border" style={{ background: p.image ? `url(${p.image.lqip}) center/cover` : brand }}>
                                 {p.image && <img src={`${KIOSKO_URL}/i/${p.image.key}-480.webp`} alt="" className="size-full object-cover" />}
                             </div>
                             <div className="flex flex-1 flex-col gap-2">
@@ -150,12 +151,7 @@ export default function ProductSheet({
                             </div>
                         </div>
                         <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => onPickPhoto(e.target.files?.[0])} />
-                        {!p.image && (
-                            <div className="mt-4 flex flex-col gap-3">
-                                <span className="text-sm text-muted-foreground">Sin foto, el producto se muestra sobre este color</span>
-                                <ColorPicker label="Color de fondo del producto" value={p.color} onChange={(hex) => set({ color: hex })} />
-                            </div>
-                        )}
+                        {!p.image && <p className="mt-3 text-sm text-muted-foreground">Sin foto, tu producto se muestra sobre el color de tu marca.</p>}
                     </Section>
 
                     {single ? (
