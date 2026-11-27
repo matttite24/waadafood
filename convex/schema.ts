@@ -24,13 +24,6 @@ export default defineSchema({
         .index("by_owner", ["ownerId"])
         .index("by_wa", ["waNumber"]),
 
-    menuVersions: defineTable({
-        storeId: v.id("stores"),
-        version: v.number(),
-        menu: vMenu,
-        publishedAt: v.number(),
-    }).index("by_store", ["storeId"]),
-
     orders: defineTable({
         storeId: v.id("stores"),
         code: v.string(),

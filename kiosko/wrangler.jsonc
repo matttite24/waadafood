@@ -1,0 +1,12 @@
+{
+    "name": "waadafood-kiosko",
+    "main": "src/index.ts",
+    "compatibility_date": "2026-01-26",
+    // Producción: el kiosko atiende waadafood.com. El panel vive aparte en app.waadafood.com.
+    "routes": [{ "pattern": "waadafood.com/*", "zone_name": "waadafood.com" }],
+    "vars": { "CONVEX_SITE_URL": "https://strong-herring-329.convex.site" },
+    // Fotos del kiosko (spec §10). Un solo bucket; el Worker las sirve en /i/*.
+    "r2_buckets": [{ "binding": "IMAGES", "bucket_name": "waadaimg" }]
+    // Secreto (no va aquí): wrangler secret put INGEST_KEY
+    // En local, kiosko/.dev.vars sobrescribe estas variables (apunta a Convex de desarrollo).
+}

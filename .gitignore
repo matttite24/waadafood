@@ -3,3 +3,5 @@ node_modules
 .DS_Store
 web/dist
 web/.env.local
+kiosko/.dev.vars
+.wrangler

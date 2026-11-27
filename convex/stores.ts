@@ -1,4 +1,4 @@
-import { mutation, query } from "./_generated/server";
+import { internalQuery, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
@@ -130,5 +130,29 @@ export const saveDraft = mutation({
         await ctx.db.patch(store._id, {
             draftMenu: { ...menu, store: { ...menu.store, slug: store.slug, phone: store.waNumber } },
         });
+    },
+});
+
+/** Publica el borrador (reemplaza lo publicado; no hay historial) y lo deja visible para el kiosko (hasta 5 min por la caché). */
+export const publish = mutation({
+    args: {},
+    handler: async (ctx) => {
+        const ownerId = await requireOwnerId(ctx);
+        const store = await ctx.db.query("stores").withIndex("by_owner", (q) => q.eq("ownerId", ownerId)).first();
+        if (!store) throw new Error("Comercio no encontrado");
+        assertMenuLimits(store.draftMenu);
+        const version = store.publishedVersion + 1;
+        const menu = { ...store.draftMenu, version };
+        await ctx.db.patch(store._id, { publishedMenu: menu, publishedVersion: version });
+        return version;
+    },
+});
+
+/** Solo para las acciones HTTP del Worker. */
+export const getPublishedBySlug = internalQuery({
+    args: { slug: v.string() },
+    handler: async (ctx, { slug }) => {
+        const store = await ctx.db.query("stores").withIndex("by_slug", (q) => q.eq("slug", slug)).first();
+        return store?.publishedMenu ?? null;
     },
 });

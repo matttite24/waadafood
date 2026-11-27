@@ -62,7 +62,7 @@ Convex ──▶ Web Push (acción de Node con `web-push`) al llegar un pedido
 ```
 
 - **Dos despliegues en Cloudflare.** (1) El **Worker del kiosko** en `waadafood.com`: sirve `/:slug`, `/i/*`, `/assets/*` y `/api/*`. (2) El **panel** en `app.waadafood.com`: una SPA estática (`web/`, ya desplegada con Static Assets). Son independientes: un cambio en el panel no toca el kiosko.
-- **Convex** guarda todo: comercios, menús (borrador y publicado), versiones, pedidos, contadores, suscripciones push.
+- **Convex** guarda todo: comercios, menús (borrador y publicado), pedidos, contadores, suscripciones push.
 - **R2** (binding `IMAGES`) guarda solo las fotos. No se usan KV ni D1.
 - **Kinde** autentica al dueño. Convex valida el token de Kinde como proveedor OIDC. El Worker del kiosko no usa Kinde (el comensal no inicia sesión).
 - Los endpoints públicos de Convex (`/menu`, `/pedido`, `/eventos`) **solo aceptan llamadas del Worker**: exigen la cabecera `x-waada-key` (secreto compartido). Así nadie los usa directamente y el navegador del cliente nunca habla con Convex.
@@ -99,7 +99,7 @@ waadafood/
 │  ├─ auth.config.js       # Kinde como proveedor (existe)
 │  ├─ schema.ts            # tablas de la sección 5
 │  ├─ http.ts              # /menu, /pedido, /eventos (solo con x-waada-key)
-│  ├─ stores.ts            # getMine, saveDraft, publish, restore
+│  ├─ stores.ts            # getMine, getOrCreateMine, saveDraft, publish
 │  ├─ orders.ts            # create (interna), listMine, setStatus
 │  ├─ stats.ts             # reportes y embudo
 │  ├─ images.ts            # requestUploadTicket (acción)
@@ -206,8 +206,6 @@ stores: {
   createdAt: number,
 }  // índices: by_slug, by_owner, by_wa
 
-menuVersions: { storeId, version, menu, publishedAt }       // índice by_store
-
 orders: {
   storeId, code, sessionId,    // dedupe por (sessionId, code)
   items: [...], clientTotal, serverTotal, mismatch: boolean,
@@ -249,7 +247,7 @@ El Worker agrega `x-client-ip` (de `cf-connecting-ip`) para la limitación por I
 ### 6.2 Funciones del panel (exigen sesión de Kinde; el dueño solo accede a su comercio)
 **Regla:** ninguna recibe `userId`; el dueño sale de `ctx.auth.getUserIdentity().subject` (el `sub` de Kinde, `kp_...`). Una función sin sesión falla.
 
-`stores.getMine` · `stores.getOrCreateMine` (registro) · `stores.saveDraft` · `stores.publish` · `stores.restore(version)` · `orders.listMine` (reactiva) · `orders.setStatus` · `stats.summary` · `stats.funnel` · `images.requestUploadTicket` (acción) · `push.subscribe`.
+`stores.getMine` · `stores.getOrCreateMine` (registro) · `stores.saveDraft` · `stores.publish` · ``orders.listMine` (reactiva) · `orders.setStatus` · `stats.summary` · `stats.funnel` · `images.requestUploadTicket` (acción) · `push.subscribe`.
 
 ### 6.3 Funciones de administración (solo `ADMIN_IDS`)
 `admin.verifyWhatsApp(storeId)` · `admin.setPlan(storeId, plan, until)`. `ADMIN_IDS` es una lista de `sub` de Kinde separados por coma.
@@ -461,7 +459,7 @@ El dueño opera desde su teléfono, el mismo donde le llega el WhatsApp. **El pa
 
 ### 12.5 Pantallas
 - **Pedidos:** tarjetas grandes (código, hora relativa, total, domicilio o retiro), filtros Nuevos / En curso / Hechos. El detalle muestra ítems, **Abrir en Maps**, un mapa pequeño (Leaflet + OSM, cargado solo en esa pantalla), **Responder por WhatsApp** y los botones de estado.
-- **Menú:** lista de los ≤ 5 productos con interruptor de **Agotado**. Cada producto abre una hoja inferior con variantes, grupos y foto. **Vista previa** a pantalla completa: un `<iframe>` con `waadafood.com/{slug}?preview=1`, al que el panel envía el borrador por `postMessage` (el kiosko lo muestra sin leer la caché ni guardar pedidos). Indicador "Cambios sin publicar" y botón **Publicar** fijo abajo. Historial de versiones con "Restaurar".
+- **Menú:** lista de los ≤ 5 productos con interruptor de **Agotado**. Cada producto abre una hoja inferior con variantes, grupos y foto. **Vista previa** a pantalla completa: un `<iframe>` con `waadafood.com/{slug}?preview=1`, al que el panel envía el borrador por `postMessage` (el kiosko lo muestra sin leer la caché ni guardar pedidos). Indicador "Cambios sin publicar" y botón **Publicar** fijo abajo. No hay historial de versiones: publicar reemplaza lo anterior.
 - **Reportes:** ventas del día, la semana y el mes, ticket promedio, aceptación del upsell y el embudo.
 - **Cuenta:** datos del local, WhatsApp verificado, horario, plan y uso ("32 de 50 pedidos este mes"), link del kiosko con **Copiar** y **Compartir** (`navigator.share`), **Mi QR** (sección 12.6) y la opción de aparecer en el directorio.
 
@@ -554,7 +552,7 @@ Reglas:
 - ✅ El panel se usa de punta a punta con una mano en un teléfono de 360 px.
 
 **F3 — Editor, publicación y fotos**
-- Editor del menú con límites, vista previa en el panel, publicar, versiones y restaurar.
+- Editor del menú con límites, vista previa en el panel, publicar (sin historial de versiones).
 - Pipeline de fotos de la sección 10.
 - QR por lugar y cartel imprimible (12.6).
 - ✅ Cambiar un precio y publicar se refleja en el kiosko en ≤ 5 minutos.

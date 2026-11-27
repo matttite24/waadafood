@@ -1,5 +1,6 @@
 import { useKindeAuth } from "@kinde-oss/kinde-auth-react";
-import { useConvexAuth, useQuery } from "convex/react";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
+import { toast } from "sonner";
 import { api } from "@convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import Registro from "./Registro";
@@ -7,6 +8,7 @@ import Registro from "./Registro";
 export default function Inicio() {
     const { logout } = useKindeAuth();
     const { isLoading, isAuthenticated } = useConvexAuth();
+    const publish = useMutation(api.stores.publish);
     const store = useQuery(api.stores.getMine, isAuthenticated ? {} : "skip");
 
     // Esperar a que Convex valide el token: sin sesión getMine devuelve null y se vería el registro por error.
@@ -22,6 +24,14 @@ export default function Inicio() {
             <p className="text-sm">
                 WhatsApp: {store.waNumber} {store.waVerified ? "· verificado" : "· sin verificar"}
             </p>
+            <Button onClick={async () => {
+                try {
+                    const v = await publish({});
+                    toast.success(`Publicado (versión ${v}). Visible en unos minutos.`);
+                } catch {
+                    toast.error("No se pudo publicar");
+                }
+            }}>Publicar</Button>
             <Button variant="outline" onClick={() => logout()}>Salir</Button>
         </main>
     );
