@@ -29,4 +29,27 @@ http.route({
     }),
 });
 
+/** El Worker reenvía aquí los pedidos del kiosko. Todo se valida y se recalcula en la mutación. */
+http.route({
+    path: "/pedido",
+    method: "POST",
+    handler: httpAction(async (ctx, request) => {
+        if (!authorized(request)) return new Response("Forbidden", { status: 403 });
+        let body: unknown;
+        try {
+            body = await request.json();
+        } catch {
+            return new Response("JSON inválido", { status: 400 });
+        }
+        try {
+            await ctx.runMutation(internal.orders.create, body as never);
+            return new Response(null, { status: 204 });
+        } catch (e) {
+            // Los argumentos que no cumplen el validador también caen aquí.
+            const msg = e instanceof Error ? e.message.split("\n")[0].replace(/^.*Uncaught Error: /, "") : "Pedido inválido";
+            return new Response(msg, { status: 400 });
+        }
+    }),
+});
+
 export default http;

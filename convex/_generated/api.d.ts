@@ -12,6 +12,7 @@ import type * as auth from "../auth.js";
 import type * as http from "../http.js";
 import type * as images from "../images.js";
 import type * as menuValidators from "../menuValidators.js";
+import type * as orders from "../orders.js";
 import type * as stores from "../stores.js";
 
 import type {
@@ -25,6 +26,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   images: typeof images;
   menuValidators: typeof menuValidators;
+  orders: typeof orders;
   stores: typeof stores;
 }>;
 

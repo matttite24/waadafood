@@ -1,10 +1,13 @@
+import { useEffect, useRef } from "react";
 import { NavLink, Outlet, useOutletContext } from "react-router-dom";
+import { toast } from "sonner";
 import { useConvexAuth, useQuery } from "convex/react";
 import { Receipt, ForkKnife, ChartBar, UserCircle } from "@phosphor-icons/react";
 import { api } from "@convex/_generated/api";
 import type { Doc } from "@convex/_generated/dataModel";
 import Registro from "@/pages/Registro";
 import { cn } from "@/lib/utils";
+import { notifyNewOrder, setBadge } from "@/lib/alerts";
 
 export type Store = Doc<"stores">;
 export const useStore = () => useOutletContext<Store>();
@@ -29,6 +32,25 @@ export default function PanelLayout() {
     const { isLoading, isAuthenticated } = useConvexAuth();
     // Sin sesión validada por Convex, getMine devolvería null y se vería el registro por error.
     const store = useQuery(api.stores.getMine, isAuthenticated ? {} : "skip");
+    const orders = useQuery(api.orders.listMine, isAuthenticated && store ? {} : "skip");
+
+    // Pedido nuevo con el panel abierto: sonido, vibración, aviso y globo. La primera carga solo fija la línea base.
+    const seen = useRef<Set<string> | null>(null);
+    const newCount = orders?.filter((o) => o.status === "enviado").length ?? 0;
+    useEffect(() => {
+        if (!orders) return;
+        if (seen.current === null) {
+            seen.current = new Set(orders.map((o) => o._id));
+            return;
+        }
+        const fresh = orders.filter((o) => !seen.current!.has(o._id));
+        fresh.forEach((o) => seen.current!.add(o._id));
+        if (fresh.length > 0) {
+            notifyNewOrder();
+            toast.success(`Pedido nuevo #${fresh[0].code}`);
+        }
+    }, [orders]);
+    useEffect(() => { setBadge(newCount); }, [newCount]);
 
     if (isLoading || !isAuthenticated || store === undefined) return <Spinner />;
     if (store === null) return <Registro />;
@@ -56,7 +78,12 @@ export default function PanelLayout() {
                             >
                                 {({ isActive }) => (
                                     <>
-                                        <Icon size={26} weight={isActive ? "fill" : "regular"} />
+                                        <span className="relative">
+                                            <Icon size={26} weight={isActive ? "fill" : "regular"} />
+                                            {to === "/pedidos" && newCount > 0 && (
+                                                <span className="absolute -right-2 -top-1.5 min-w-5 rounded-full bg-destructive px-1 text-center text-[11px] font-bold leading-5 text-white">{newCount}</span>
+                                            )}
+                                        </span>
                                         {label}
                                     </>
                                 )}

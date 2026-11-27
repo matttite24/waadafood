@@ -15,6 +15,7 @@ interface Env {
 
 const MENU_TTL = 300; // segundos (spec §7)
 const PREVIEW_MAX_BYTES = 100 * 1024;
+const MAX_ORDER_BYTES = 8 * 1024;
 
 // `caches.default` existe en Workers pero no está en los tipos estándar de DOM.
 const edgeCache = () => (caches as unknown as { default: Cache }).default;
@@ -97,6 +98,23 @@ export default {
             const out = new Response(res.body, res);
             out.headers.set("Cache-Control", "public, max-age=31536000, immutable"); // el nombre lleva hash
             return out;
+        }
+
+        // Aviso de pedido desde el kiosko (sendBeacon): se reenvía a Convex sin hacer esperar al cliente.
+        if (url.pathname === "/api/pedido") {
+            if (request.method !== "POST") return new Response("Método no permitido", { status: 405 });
+            const body = await request.text();
+            if (body.length === 0 || body.length > MAX_ORDER_BYTES) return new Response(null, { status: 413 });
+            ctx.waitUntil(
+                fetch(`${env.CONVEX_SITE_URL}/pedido`, {
+                    method: "POST",
+                    headers: { "x-waada-key": env.INGEST_KEY, "Content-Type": "application/json", "x-client-ip": request.headers.get("cf-connecting-ip") ?? "" },
+                    body,
+                })
+                    .then(async (r) => { if (!r.ok) console.error("pedido rechazado por Convex", r.status, await r.text()); })
+                    .catch((e) => console.error("pedido: no se pudo contactar a Convex", String(e))),
+            );
+            return new Response(null, { status: 204 });
         }
 
         const img = url.pathname.match(/^\/(api\/imagen|i)\/([a-z0-9]+)\/([a-f0-9-]+\.webp)$/);

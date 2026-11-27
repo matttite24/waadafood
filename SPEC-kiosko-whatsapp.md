@@ -239,7 +239,7 @@ Notas:
 | Método | Ruta | Qué hace |
 |---|---|---|
 | GET | `/menu?slug=` | Devuelve `publishedMenu` (JSON). 404 si no existe o no está publicado. |
-| POST | `/pedido` | Valida, recalcula el total con `publishedMenu`, guarda el pedido, incrementa `counters` y `dailyStats`, y programa el push. Idempotente por `(sessionId, code)`. Máx. 5 pedidos por hora por sesión. |
+| POST | `/pedido` | Valida, recalcula el total con `publishedMenu`, guarda el pedido, incrementa `counters` y `dailyStats`, y programa el push. Idempotente por `(sessionId, code)`. Máx. 5 pedidos por hora por sesión (el límite por IP con `x-client-ip` queda para después). |
 | POST | `/eventos` | Un solo lote por visita. Incrementa `funnel`. Descarta lo que no esté en la lista de pasos válidos. |
 
 El Worker agrega `x-client-ip` (de `cf-connecting-ip`) para la limitación por IP.
@@ -458,7 +458,7 @@ El dueño opera desde su teléfono, el mismo donde le llega el WhatsApp. **El pa
 - La lista de pedidos es una **consulta reactiva** de Convex: aparece sola, sin sondeo.
 
 ### 12.5 Pantallas
-- **Pedidos:** tarjetas grandes (código, hora relativa, total, domicilio o retiro), filtros Nuevos / En curso / Hechos. El detalle muestra ítems, **Abrir en Maps**, un mapa pequeño (Leaflet + OSM, cargado solo en esa pantalla), **Responder por WhatsApp** y los botones de estado.
+- **Pedidos:** tarjetas grandes (código, hora relativa, total, domicilio o retiro), filtros Nuevos / En curso / Hechos. El detalle muestra ítems, **Abrir en Maps**, un mapa pequeño (Leaflet + OSM, cargado solo en esa pantalla), y los botones de estado. No hay "Responder por WhatsApp": el kiosko no conoce el número del cliente (el mensaje le llega al dueño por WhatsApp y ahí se responde).
 - **Menú:** lista de los ≤ 5 productos con interruptor de **Agotado**. Cada producto abre una hoja inferior con variantes, grupos y foto. **Vista previa** a pantalla completa: un `<iframe>` al que el panel envía el borrador por POST (ver §7); el kiosko lo muestra sin leer la caché ni guardar pedidos. Indicador "Cambios sin publicar" y botón **Publicar** fijo abajo. No hay historial de versiones: publicar reemplaza lo anterior.
 - **Reportes:** ventas del día, la semana y el mes, ticket promedio, aceptación del upsell y el embudo.
 - **Cuenta:** datos del local, WhatsApp verificado, horario, plan y uso ("32 de 50 pedidos este mes"), link del kiosko con **Copiar** y **Compartir** (`navigator.share`), **Mi QR** (sección 12.6) y la opción de aparecer en el directorio.
