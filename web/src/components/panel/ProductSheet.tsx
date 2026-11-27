@@ -5,22 +5,33 @@ import { api } from "@convex/_generated/api";
 import { Drawer, DrawerContent, DrawerFooter } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 import { Field, PriceInput } from "@/components/ui/field";
 import { IconButton, Section, SheetHead } from "./kit";
 import { IconAgregar, IconBajar, IconBorrar, IconFoto, IconSubir } from "@/components/icons";
 import { errorText } from "./PublishBar";
 import { processPhoto, uploadPhoto } from "@/lib/photo";
-import { cn } from "@/lib/utils";
 import type { Store } from "./PanelLayout";
 
 export type Product = Store["draftMenu"]["products"][number];
-type Group = Product["groups"][number];
 
 // Límites de la spec §5.2 (el servidor los vuelve a comprobar en saveDraft).
-const MAX_VARIANTS = 4, MAX_GROUPS = 3, MAX_OPTIONS = 8, DESC_MAX = 140, NAME_MAX = 40;
+const MAX_VARIANTS = 4, MAX_EXTRAS = 8, DESC_MAX = 140, NAME_MAX = 40;
 const KIOSKO_URL = import.meta.env.VITE_KIOSKO_URL;
 const uid = () => crypto.randomUUID().slice(0, 8);
+
+
+// Modelo simple: un producto tiene VARIANTES (el cliente elige una) y EXTRAS (agrega los que quiera).
+// Por dentro los extras son un único grupo de "elegir varias"; el servidor y el kiosko no cambian.
+const EXTRAS_TITLE = "¿Quieres agregar algo?";
+type Extra = Product["groups"][number]["options"][number];
+
+/** ¿Usa solo el modelo simple? Los productos viejos con varias preguntas o "elegir una" no lo cumplen. */
+const isSimple = (p: Product) => p.groups.length === 0 || (p.groups.length === 1 && p.groups[0].type === "many" && !p.groups[0].prefix);
+const extrasOf = (p: Product): Extra[] => (isSimple(p) ? p.groups[0]?.options ?? [] : []);
+const withExtras = (p: Product, options: Extra[]): Product =>
+    ({ ...p, groups: options.length === 0 ? [] : [{ id: p.groups[0]?.id ?? uid(), title: EXTRAS_TITLE, type: "many" as const, options }] });
+/** Convierte un producto con varias preguntas en una sola lista de extras (junta todas las opciones). */
+const simplify = (p: Product): Product => withExtras({ ...p, groups: [] }, p.groups.flatMap((g) => g.options).slice(0, MAX_EXTRAS));
 
 export function newProduct(): Product {
     return { id: uid(), name: "", desc: "", color: "#F4C542", upsell: false, available: true, groups: [], variants: [{ id: uid(), label: "Único", price: 0 }] };
@@ -33,11 +44,8 @@ function problem(p: Product): string | null {
         const i = p.variants.findIndex((v) => !v.label.trim());
         if (i >= 0) return `Escribe el nombre de la variante ${i + 1} (por ejemplo «Simple» o «Doble»).`;
     }
-    for (const [gi, g] of p.groups.entries()) {
-        const where = g.title.trim() ? `«${g.title.trim()}»` : `la pregunta ${gi + 1}`;
-        const oi = g.options.findIndex((o) => !o.label.trim());
-        if (oi >= 0) return `Escribe el nombre de la opción ${oi + 1} en ${where}.`;
-    }
+    const ei = extrasOf(p).findIndex((o) => !o.label.trim());
+    if (ei >= 0) return `Escribe el nombre del extra ${ei + 1} (por ejemplo «Bebida» o «Papas extras»).`;
     return null;
 }
 
@@ -75,7 +83,6 @@ export default function ProductSheet({
     if (!p) return <Drawer open={false} onOpenChange={() => {}}><DrawerContent /></Drawer>;
 
     const set = (patch: Partial<Product>) => setP({ ...p, ...patch });
-    const setGroup = (i: number, g: Group) => set({ groups: p.groups.map((x, j) => (j === i ? g : x)) });
     const setVariant = (i: number, patch: Partial<Product["variants"][number]>) => set({ variants: p.variants.map((x, j) => (j === i ? { ...x, ...patch } : x)) });
 
     function requestClose() {
@@ -150,82 +157,89 @@ export default function ProductSheet({
                         )}
                     </Section>
 
-                    <Section title={single ? "Precio" : "Tamaños o variantes"}>
-                        <div className="flex flex-col gap-3">
-                            {single ? (
+                    {single ? (
+                        <Section title="Precio">
+                            <div className="flex flex-col gap-3">
                                 <Field label="Precio" hint="En dólares">
                                     <PriceInput value={p.variants[0].price} onChange={(n) => setVariant(0, { price: n })} />
                                 </Field>
-                            ) : (
-                                <>
-                                    <div className="flex gap-2 px-1 text-sm font-medium"><span className="flex-1">Nombre</span><span className="w-28">Precio</span><span className="w-12" /></div>
-                                    {p.variants.map((v, i) => (
-                                        <div key={v.id} className="flex items-center gap-2">
-                                            <Input aria-label={`Nombre de la variante ${i + 1}`} autoComplete="off" autoCapitalize="sentences" placeholder="Ej.: Doble" value={v.label} onChange={(e) => setVariant(i, { label: e.target.value })} />
-                                            <PriceInput aria-label={`Precio de ${v.label || `la variante ${i + 1}`}`} className="w-28" value={v.price} onChange={(n) => setVariant(i, { price: n })} />
-                                            <IconButton label={`Quitar ${v.label || `variante ${i + 1}`}`} className="shrink-0 text-muted-foreground" onClick={() => set({ variants: p.variants.filter((_, j) => j !== i) })}><IconBorrar /></IconButton>
+                                <Button variant="soft" onClick={() => set({ variants: [{ ...p.variants[0], label: "Sencilla" }, { id: uid(), label: "", price: p.variants[0].price }] })}>
+                                    <IconAgregar />Tiene variantes (ej.: Doble y Sencilla)
+                                </Button>
+                            </div>
+                        </Section>
+                    ) : (
+                        <Section title="Variantes">
+                            <p className="-mt-1 mb-3 text-sm text-muted-foreground">El cliente elige <b>una</b>. Ej.: Doble $8.00 · Sencilla $5.00.</p>
+                            <div className="flex flex-col gap-3">
+                                <div className="flex gap-2 px-1 text-sm font-medium"><span className="flex-1">Nombre</span><span className="w-28">Precio</span><span className="w-12" /></div>
+                                {p.variants.map((v, i) => (
+                                    <div key={v.id} className="flex items-center gap-2">
+                                        <Input aria-label={`Nombre de la variante ${i + 1}`} autoComplete="off" autoCapitalize="sentences" placeholder="Ej.: Doble" value={v.label} onChange={(e) => setVariant(i, { label: e.target.value })} />
+                                        <PriceInput aria-label={`Precio de ${v.label || `la variante ${i + 1}`}`} className="w-28" value={v.price} onChange={(n) => setVariant(i, { price: n })} />
+                                        <IconButton label={`Quitar ${v.label || `variante ${i + 1}`}`} className="shrink-0 text-muted-foreground" onClick={() => set({ variants: p.variants.filter((_, j) => j !== i) })}><IconBorrar /></IconButton>
+                                    </div>
+                                ))}
+                                {p.variants.length < MAX_VARIANTS && (
+                                    <Button variant="outline" onClick={() => set({ variants: [...p.variants, { id: uid(), label: "", price: p.variants[p.variants.length - 1].price }] })}><IconAgregar />Agregar variante</Button>
+                                )}
+                                {p.variants.length === 2 && (
+                                    <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => set({ variants: [{ ...p.variants[0], label: "Único" }] })}>Quitar las variantes y dejar un solo precio</Button>
+                                )}
+                            </div>
+                        </Section>
+                    )}
+
+                    <Section title="Extras">
+                        {!isSimple(p) ? (
+                            <div className="flex flex-col gap-3">
+                                <p className="text-sm text-muted-foreground">Este producto usa opciones del formato anterior (varias preguntas). Simplifícalo para editarlo: se juntan todas sus opciones en una sola lista de extras.</p>
+                                <Button variant="outline" onClick={() => setP(simplify(p))}>Convertir a extras simples</Button>
+                            </div>
+                        ) : (
+                            <>
+                                <p className="-mt-1 mb-3 text-sm text-muted-foreground">Lo que el cliente puede <b>agregar</b>, cada cosa con su precio. Ej.: Bebida $1.00 · Papas extras $2.00. Son opcionales.</p>
+                                <div className="flex flex-col gap-3">
+                                    {extrasOf(p).length > 0 && (
+                                        <div className="flex gap-2 px-1 text-sm font-medium"><span className="flex-1">Nombre</span><span className="w-28">Precio</span><span className="w-12" /></div>
+                                    )}
+                                    {extrasOf(p).map((o, i) => (
+                                        <div key={o.id} className="flex items-center gap-2">
+                                            <Input aria-label={`Nombre del extra ${i + 1}`} autoComplete="off" autoCapitalize="sentences" placeholder="Ej.: Bebida" value={o.label}
+                                                onChange={(e) => setP(withExtras(p, extrasOf(p).map((x, j) => (j === i ? { ...x, label: e.target.value } : x))))} />
+                                            <PriceInput aria-label={`Precio de ${o.label || `el extra ${i + 1}`}`} className="w-28" value={o.price}
+                                                onChange={(n) => setP(withExtras(p, extrasOf(p).map((x, j) => (j === i ? { ...x, price: n } : x))))} />
+                                            <IconButton label={`Quitar ${o.label || `extra ${i + 1}`}`} className="shrink-0 text-muted-foreground"
+                                                onClick={() => setP(withExtras(p, extrasOf(p).filter((_, j) => j !== i)))}><IconBorrar /></IconButton>
                                         </div>
                                     ))}
-                                </>
-                            )}
-                            {p.variants.length < MAX_VARIANTS && (
-                                <Button variant="outline" onClick={() => set({ variants: [...(single && p.variants[0].label === "Único" ? [{ ...p.variants[0], label: "Normal" }] : p.variants), { id: uid(), label: "", price: p.variants[0].price }] })}>
-                                    <IconAgregar />{single ? "Ofrecer tamaños o variantes" : "Agregar otra variante"}
-                                </Button>
-                            )}
-                        </div>
+                                    {extrasOf(p).length < MAX_EXTRAS ? (
+                                        <Button variant="outline" onClick={() => setP(withExtras(p, [...extrasOf(p), { id: uid(), label: "", price: 0 }]))}>
+                                            <IconAgregar />{extrasOf(p).length === 0 ? "Agregar un extra" : "Agregar otro extra"}
+                                        </Button>
+                                    ) : (
+                                        <p className="text-center text-sm text-muted-foreground">Máximo {MAX_EXTRAS} extras.</p>
+                                    )}
+                                </div>
+                            </>
+                        )}
                     </Section>
 
-                    <section className="flex flex-col gap-3">
-                        <div>
-                            <h2 className="font-semibold">Extras y preguntas</h2>
-                            <p className="text-sm text-muted-foreground">Lo que el cliente puede añadir. Ej.: «¿Lo hacemos combo?» con la opción «Papas y bebida» +$2.50.</p>
-                        </div>
-                        {p.groups.map((g, gi) => (
-                            <Section key={g.id} title={`Pregunta ${gi + 1}`} action={<IconButton label={`Quitar la pregunta ${gi + 1}`} className="-my-2 text-muted-foreground" onClick={() => set({ groups: p.groups.filter((_, j) => j !== gi) })}><IconBorrar /></IconButton>}>
-                                <div className="flex flex-col gap-4">
-                                    <Field label="Pregunta" hint="Lo que lee el cliente">
-                                        <Input autoComplete="off" autoCapitalize="sentences" placeholder="Ej.: ¿Lo hacemos combo?" value={g.title} onChange={(e) => setGroup(gi, { ...g, title: e.target.value })} />
-                                    </Field>
-                                    <div className="grid grid-cols-2 gap-2" role="group" aria-label="Cuántas puede elegir">
-                                        {(["one", "many"] as const).map((t) => (
-                                            <Button key={t} variant={g.type === t ? "default" : "outline"} onClick={() => setGroup(gi, { ...g, type: t, prefix: t === "one" ? undefined : g.prefix })}>
-                                                {t === "one" ? "Elige una" : "Elige varias"}
-                                            </Button>
-                                        ))}
-                                    </div>
-                                    {g.type === "many" && (
-                                        <label className="flex items-center justify-between gap-3 text-sm">
-                                            <span>Son ingredientes para <b>quitar</b> (se muestra «Sin …»)</span>
-                                            <Switch checked={g.prefix === "Sin"} onCheckedChange={(c) => setGroup(gi, { ...g, prefix: c ? "Sin" : undefined })} />
-                                        </label>
-                                    )}
-                                    <div className="flex flex-col gap-3">
-                                        <div className="flex gap-2 px-1 text-sm font-medium"><span className="flex-1">Opción</span><span className="w-28">Precio extra</span><span className="w-12" /></div>
-                                        {g.options.map((o, oi) => (
-                                            <div key={o.id} className="flex items-center gap-2">
-                                                <Input aria-label={`Nombre de la opción ${oi + 1}`} autoComplete="off" autoCapitalize="sentences" placeholder="Ej.: Papas y bebida" value={o.label}
-                                                    onChange={(e) => setGroup(gi, { ...g, options: g.options.map((x, j) => (j === oi ? { ...x, label: e.target.value } : x)) })} />
-                                                <PriceInput aria-label={`Precio extra de ${o.label || `la opción ${oi + 1}`}`} className="w-28" value={o.price}
-                                                    onChange={(n) => setGroup(gi, { ...g, options: g.options.map((x, j) => (j === oi ? { ...x, price: n } : x)) })} />
-                                                <IconButton label={`Quitar ${o.label || `opción ${oi + 1}`}`} className="shrink-0 text-muted-foreground" disabled={g.options.length <= 1}
-                                                    onClick={() => setGroup(gi, { ...g, options: g.options.filter((_, j) => j !== oi) })}><IconBorrar /></IconButton>
-                                            </div>
-                                        ))}
-                                        {g.options.length < MAX_OPTIONS && (
-                                            <Button variant="outline" onClick={() => setGroup(gi, { ...g, options: [...g.options, { id: uid(), label: "", price: 0 }] })}><IconAgregar />Agregar opción</Button>
-                                        )}
-                                    </div>
+                    <Section title="Así lo verá tu cliente">
+                        <dl className="space-y-2 text-base">
+                            <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Producto</dt><dd className="text-right font-semibold">{p.name.trim() || "—"}</dd></div>
+                            <div className="flex justify-between gap-3">
+                                <dt className="text-muted-foreground">{single ? "Precio" : "Elige una"}</dt>
+                                <dd className="text-right tabular-nums">{single ? `$${p.variants[0].price.toFixed(2)}` : p.variants.map((v) => `${v.label.trim() || "…"} $${v.price.toFixed(2)}`).join(" · ")}</dd>
+                            </div>
+                            {extrasOf(p).length > 0 && (
+                                <div className="flex justify-between gap-3">
+                                    <dt className="text-muted-foreground">Puede agregar</dt>
+                                    <dd className="text-right tabular-nums">{extrasOf(p).map((o) => `${o.label.trim() || "…"} +$${o.price.toFixed(2)}`).join(" · ")}</dd>
                                 </div>
-                            </Section>
-                        ))}
-                        {p.groups.length < MAX_GROUPS && (
-                            <Button variant="outline"
-                                onClick={() => set({ groups: [...p.groups, { id: uid(), title: "", type: "many", options: [{ id: uid(), label: "", price: 0 }] }] })}>
-                                <IconAgregar />Agregar pregunta
-                            </Button>
-                        )}
-                    </section>
+                            )}
+                        </dl>
+                    </Section>
 
                     {!isNew && total > 1 && (
                         <Section title="Posición en el menú" action={<span className="text-sm text-muted-foreground">{index + 1} de {total}</span>}>
@@ -234,6 +248,30 @@ export default function ProductSheet({
                                 <Button variant="outline" disabled={index === total - 1 || busy} onClick={() => run(() => onMove(p.id, 1))}><IconBajar />Bajar</Button>
                             </div>
                         </Section>
+                    )}
+
+                    {!isNew && (
+                        <section className="mt-2 rounded-2xl border border-destructive/30 p-4">
+                            <h2 className="font-semibold text-destructive">Eliminar producto</h2>
+                            {total <= 1 ? (
+                                <p className="mt-1 text-sm text-muted-foreground">Tu menú necesita al menos un producto, por eso este no se puede eliminar.</p>
+                            ) : askDelete ? (
+                                <>
+                                    <p className="mt-1 text-sm">¿Eliminar «{p.name || "este producto"}»? Se quita del borrador; si ya lo publicaste, deja de verse al publicar de nuevo.</p>
+                                    <div className="mt-3 grid grid-cols-2 gap-2">
+                                        <Button variant="outline" onClick={() => setAskDelete(false)}>No, conservar</Button>
+                                        <Button variant="destructive" disabled={busy} onClick={() => run(() => onDelete(p.id))}>Sí, eliminar</Button>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <p className="mt-1 text-sm text-muted-foreground">Esta acción quita el producto de tu menú.</p>
+                                    <Button variant="outline" className="mt-3 w-full border-destructive/40 text-destructive hover:bg-destructive/5 hover:text-destructive" disabled={busy} onClick={() => setAskDelete(true)}>
+                                        <IconBorrar />Eliminar producto
+                                    </Button>
+                                </>
+                            )}
+                        </section>
                     )}
                 </div>
 
@@ -246,25 +284,12 @@ export default function ProductSheet({
                                 <Button variant="destructive" onClick={onClose}>Descartar</Button>
                             </div>
                         </>
-                    ) : askDelete ? (
-                        <>
-                            <p className="text-center text-sm font-medium">¿Eliminar «{p.name || "este producto"}»?</p>
-                            <div className="grid grid-cols-2 gap-2">
-                                <Button variant="outline" onClick={() => setAskDelete(false)}>No</Button>
-                                <Button variant="destructive" disabled={busy} onClick={() => run(() => onDelete(p.id))}>Sí, eliminar</Button>
-                            </div>
-                        </>
                     ) : (
                         <>
                             {err && <p role="alert" className="text-center text-sm text-destructive">{err}</p>}
                             <Button size="lg" disabled={busy || uploading || !!err || (!isNew && !dirty)} onClick={() => run(() => onSave(p))}>
                                 {busy ? "Guardando…" : isNew ? "Agregar al menú" : dirty ? "Guardar cambios" : "Sin cambios"}
                             </Button>
-                            {!isNew && total > 1 && (
-                                <Button variant="ghost" className={cn("text-destructive hover:text-destructive")} disabled={busy} onClick={() => setAskDelete(true)}>
-                                    <IconBorrar />Eliminar producto
-                                </Button>
-                            )}
                         </>
                     )}
                 </DrawerFooter>
