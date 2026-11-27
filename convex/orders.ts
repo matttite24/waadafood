@@ -214,5 +214,18 @@ export const setStatus = mutation({
         if (!isPro(store) && order.monthSeq > LIMITS.freeOrdersPerMonth) throw new Error("Activa Pro para gestionar este pedido");
         if (!NEXT[order.status].includes(status)) throw new Error("Cambio de estado no permitido");
         await ctx.db.patch(id, { status });
+
+        // Un pedido cancelado deja de contar en las ventas del día (no en el límite mensual del plan).
+        if (status === "cancelado") {
+            const day = new Date(order.createdAt - 5 * 3600 * 1000).toISOString().slice(0, 10);
+            const stats = await ctx.db.query("dailyStats").withIndex("by_store_day", (q) => q.eq("storeId", order.storeId).eq("day", day)).first();
+            if (stats) {
+                await ctx.db.patch(stats._id, {
+                    orders: Math.max(0, stats.orders - 1),
+                    revenue: Math.max(0, Math.round((stats.revenue - order.serverTotal) * 100) / 100),
+                    deliveryOrders: Math.max(0, stats.deliveryOrders - (order.mode === "domicilio" ? 1 : 0)),
+                });
+            }
+        }
     },
 });

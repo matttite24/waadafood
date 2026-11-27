@@ -8,11 +8,13 @@
  * @module
  */
 
+import type * as admin from "../admin.js";
 import type * as auth from "../auth.js";
 import type * as http from "../http.js";
 import type * as images from "../images.js";
 import type * as menuValidators from "../menuValidators.js";
 import type * as orders from "../orders.js";
+import type * as stats from "../stats.js";
 import type * as stores from "../stores.js";
 
 import type {
@@ -22,11 +24,13 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  admin: typeof admin;
   auth: typeof auth;
   http: typeof http;
   images: typeof images;
   menuValidators: typeof menuValidators;
   orders: typeof orders;
+  stats: typeof stats;
   stores: typeof stores;
 }>;
 
