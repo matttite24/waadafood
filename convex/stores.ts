@@ -4,6 +4,7 @@ import type { Doc } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { getOwnerId, requireOwnerId } from "./auth";
 import { LIMITS, RESERVED_SLUGS, SLUG_RE } from "../shared/limits";
+import { normalizeWhatsApp } from "../shared/phone";
 import { vMenu } from "./menuValidators";
 
 type Menu = Doc<"stores">["draftMenu"];
@@ -103,8 +104,8 @@ export const getOrCreateMine = mutation({
 
         const name = args.name.trim();
         if (name.length < 2 || name.length > 60) throw new Error("Nombre inválido");
-        const waNumber = args.waNumber.replace(/\D/g, "");
-        if (waNumber.length < 8 || waNumber.length > 15) throw new Error("Número de WhatsApp inválido (con código de país, sin +)");
+        const waNumber = normalizeWhatsApp(args.waNumber);
+        if (!waNumber) throw new Error("El número de WhatsApp no parece válido. Ejemplo: 0988200451");
         const waTaken = await ctx.db.query("stores").withIndex("by_wa", (q) => q.eq("waNumber", waNumber)).first();
         if (waTaken) throw new Error("Ese número de WhatsApp ya tiene una cuenta");
 
@@ -148,7 +149,7 @@ export const saveDraft = mutation({
         assertMenuLimits(menu);
         assertImages(menu, store._id);
         await ctx.db.patch(store._id, {
-            draftMenu: { ...menu, store: { ...menu.store, slug: store.slug, phone: store.waNumber } },
+            draftMenu: { ...menu, store: { ...menu.store, slug: store.slug, phone: store.waNumber, name: store.name } },
         });
     },
 });
@@ -174,5 +175,19 @@ export const getPublishedBySlug = internalQuery({
     handler: async (ctx, { slug }) => {
         const store = await ctx.db.query("stores").withIndex("by_slug", (q) => q.eq("slug", slug)).first();
         return store?.publishedMenu ?? null;
+    },
+});
+
+/** Cambia el nombre y la categoría del local. El enlace (slug) y el WhatsApp no se tocan desde aquí. */
+export const updateProfile = mutation({
+    args: { name: v.string(), category: v.optional(v.string()) },
+    handler: async (ctx, args) => {
+        const ownerId = await requireOwnerId(ctx);
+        const store = await ctx.db.query("stores").withIndex("by_owner", (q) => q.eq("ownerId", ownerId)).first();
+        if (!store) throw new Error("Comercio no encontrado");
+        const name = args.name.trim();
+        if (name.length < 2 || name.length > 60) throw new Error("El nombre debe tener entre 2 y 60 caracteres");
+        const category = args.category?.trim().slice(0, 40) || undefined;
+        await ctx.db.patch(store._id, { name, category, draftMenu: { ...store.draftMenu, store: { ...store.draftMenu.store, name } } });
     },
 });
