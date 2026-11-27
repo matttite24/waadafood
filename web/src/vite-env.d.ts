@@ -4,6 +4,7 @@ interface ImportMetaEnv {
     readonly VITE_CONVEX_URL: string;
     readonly VITE_KINDE_CLIENT_ID: string;
     readonly VITE_KINDE_DOMAIN: string;
+    readonly VITE_KIOSKO_URL: string;
 }
 
 interface ImportMeta {

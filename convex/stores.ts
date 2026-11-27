@@ -62,6 +62,12 @@ export function assertMenuLimits(menu: Menu) {
     const L = LIMITS;
     if (menu.products.length < L.products.min || menu.products.length > L.products.max)
         throw new Error(`Debe haber entre ${L.products.min} y ${L.products.max} productos`);
+    const { delivery, payments, color } = menu.store;
+    if (!delivery.enabled && !delivery.pickup) throw new Error("Activa al menos una forma de entrega");
+    if (payments.length === 0) throw new Error("Activa al menos una forma de pago");
+    if (delivery.fee !== undefined && !(delivery.fee >= 0 && delivery.fee <= 100)) throw new Error("Costo de envío inválido");
+    if (delivery.note && delivery.note.length > 80) throw new Error("La nota de entrega es demasiado larga");
+    if (!/^#[0-9a-fA-F]{6}$/.test(color)) throw new Error("Color inválido");
     if (menu.upsells.length > L.upsells.max) throw new Error(`Máximo ${L.upsells.max} extras de combo`);
     for (const p of menu.products) {
         if (!p.name.trim() || p.name.length > L.productNameMax) throw new Error(`Nombre de producto inválido: máx. ${L.productNameMax} caracteres`);
@@ -119,6 +125,19 @@ export const getOrCreateMine = mutation({
     },
 });
 
+const IMG_KEY_RE = /^[a-z0-9]+\/[a-f0-9]{10}$/;
+
+/** La foto debe pertenecer al comercio (su clave empieza con su id) y tener la forma que genera el panel. */
+function assertImages(menu: Menu, storeId: string) {
+    for (const p of menu.products) {
+        const img = p.image;
+        if (!img) continue;
+        if (!IMG_KEY_RE.test(img.key) || !img.key.startsWith(`${storeId}/`)) throw new Error("Foto inválida");
+        if (!img.lqip.startsWith("data:image/webp;base64,") || img.lqip.length > 2000) throw new Error("Foto inválida");
+        if (!(img.w > 0 && img.h > 0 && img.w <= 4000 && img.h <= 4000)) throw new Error("Foto inválida");
+    }
+}
+
 /** Guarda el borrador. El slug y el teléfono no se cambian desde aquí. */
 export const saveDraft = mutation({
     args: { menu: vMenu },
@@ -127,6 +146,7 @@ export const saveDraft = mutation({
         const store = await ctx.db.query("stores").withIndex("by_owner", (q) => q.eq("ownerId", ownerId)).first();
         if (!store) throw new Error("Comercio no encontrado");
         assertMenuLimits(menu);
+        assertImages(menu, store._id);
         await ctx.db.patch(store._id, {
             draftMenu: { ...menu, store: { ...menu.store, slug: store.slug, phone: store.waNumber } },
         });

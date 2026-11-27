@@ -1,9 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useAction } from "convex/react";
+import { toast } from "sonner";
+import { api } from "@convex/_generated/api";
+import { processPhoto, uploadPhoto } from "@/lib/photo";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import type { Store } from "./PanelLayout";
 
 export type Product = Store["draftMenu"]["products"][number];
@@ -12,6 +15,7 @@ type Group = Product["groups"][number];
 // Límites de la spec §5.2 (el servidor los vuelve a comprobar en saveDraft).
 const MAX_VARIANTS = 4, MAX_GROUPS = 3, MAX_OPTIONS = 8, DESC_MAX = 140, NAME_MAX = 40;
 
+const KIOSKO_URL = import.meta.env.VITE_KIOSKO_URL;
 const uid = () => crypto.randomUUID().slice(0, 8);
 
 function Num({ value, onChange }: { value: number; onChange: (n: number) => void }) {
@@ -42,11 +46,31 @@ export default function ProductSheet({
 }) {
     const [p, setP] = useState<Product | null>(product);
     const [busy, setBusy] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const fileRef = useRef<HTMLInputElement>(null);
+    const requestTickets = useAction(api.images.requestUploadTicket);
     useEffect(() => setP(product), [product]);
     if (!p) return <Drawer open={false} onOpenChange={() => {}}><DrawerContent /></Drawer>;
 
     const set = (patch: Partial<Product>) => setP({ ...p, ...patch });
     const setGroup = (i: number, g: Group) => set({ groups: p.groups.map((x, j) => (j === i ? g : x)) });
+
+    async function onPickPhoto(file: File | undefined) {
+        if (!file || !p) return;
+        setUploading(true);
+        try {
+            const photo = await processPhoto(file);
+            const { storeId, tickets } = await requestTickets({ files: Object.keys(photo.files) });
+            await uploadPhoto(KIOSKO_URL, storeId, photo, tickets);
+            setP((cur) => cur && { ...cur, image: { key: `${storeId}/${photo.hash}`, widths: [480, 720, 1080], lqip: photo.lqip, w: photo.w, h: photo.h } });
+            toast.success("Foto lista. Guarda el producto para conservarla.");
+        } catch (e) {
+            toast.error(e instanceof Error ? e.message.replace(/^.*Uncaught Error: /s, "").split("\n")[0] : "No se pudo subir la foto");
+        } finally {
+            setUploading(false);
+            if (fileRef.current) fileRef.current.value = "";
+        }
+    }
 
     async function run(fn: () => Promise<void>) {
         setBusy(true);
@@ -66,6 +90,21 @@ export default function ProductSheet({
                         <Label>Descripción ({p.desc.length}/{DESC_MAX})</Label>
                         <Input className="h-12" maxLength={DESC_MAX} value={p.desc} onChange={(e) => set({ desc: e.target.value })} />
                     </div>
+                    <section className="flex flex-col gap-3">
+                        <h3 className="font-semibold">Foto</h3>
+                        <div className="flex items-center gap-3">
+                            <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl border bg-muted" style={p.image ? { backgroundImage: `url(${p.image.lqip})`, backgroundSize: "cover" } : undefined}>
+                                {p.image && <img src={`${KIOSKO_URL}/i/${p.image.key}-480.webp`} alt="" className="h-full w-full object-cover" />}
+                            </div>
+                            <div className="flex flex-1 flex-col gap-2">
+                                <Button variant="outline" className="h-12" disabled={uploading} onClick={() => fileRef.current?.click()}>
+                                    {uploading ? "Subiendo…" : p.image ? "Cambiar foto" : "Subir foto"}
+                                </Button>
+                                {p.image && !uploading && <Button variant="ghost" className="h-10" onClick={() => set({ image: undefined })}>Quitar foto</Button>}
+                            </div>
+                        </div>
+                        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => onPickPhoto(e.target.files?.[0])} />
+                    </section>
                     <div className="flex gap-3">
                         <div className="flex flex-1 flex-col gap-2">
                             <Label>Etiqueta (opcional)</Label>
@@ -95,6 +134,7 @@ export default function ProductSheet({
 
                     <section className="flex flex-col gap-3">
                         <h3 className="font-semibold">Extras y opciones</h3>
+                        <p className="-mt-2 text-sm text-muted-foreground">Ej.: «¿Lo hacemos combo?» con la opción «Papas y bebida» (+$2.50).</p>
                         {p.groups.map((g, gi) => (
                             <div key={g.id} className="flex flex-col gap-3 rounded-2xl border p-3">
                                 <div className="flex gap-2">
@@ -128,13 +168,9 @@ export default function ProductSheet({
                         )}
                     </section>
 
-                    <div className="flex items-center justify-between">
-                        <Label>Ofrecer combo o bebida al final</Label>
-                        <Switch checked={p.upsell} onCheckedChange={(c) => set({ upsell: c })} />
-                    </div>
                 </div>
                 <DrawerFooter>
-                    <Button className="h-12" disabled={busy || !p.name.trim()} onClick={() => run(() => onSave(p))}>Guardar</Button>
+                    <Button className="h-12" disabled={busy || uploading || !p.name.trim()} onClick={() => run(() => onSave(p))}>Guardar</Button>
                     {canDelete && <Button variant="ghost" className="h-12 text-destructive" disabled={busy} onClick={() => run(() => onDelete(p.id))}>Eliminar producto</Button>}
                 </DrawerFooter>
             </DrawerContent>

@@ -5,6 +5,7 @@ import { api } from "@convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useStore } from "@/components/panel/PanelLayout";
+import PreviewSheet from "@/components/panel/PreviewSheet";
 import ProductSheet, { newProduct, type Product } from "@/components/panel/ProductSheet";
 
 const MAX_PRODUCTS = 5;
@@ -18,6 +19,7 @@ export default function MenuPage() {
     const menu = store.draftMenu;
     const [editing, setEditing] = useState<Product | null>(null);
     const [publishing, setPublishing] = useState(false);
+    const [previewing, setPreviewing] = useState(false);
 
     // "Cambios sin publicar": el borrador difiere de lo publicado (se ignora el número de versión).
     const dirty = !store.publishedMenu || strip(menu) !== strip(store.publishedMenu);
@@ -93,11 +95,15 @@ export default function MenuPage() {
             <div className="h-24" />
             <div className="fixed inset-x-0 bottom-16 z-30 mx-auto max-w-md border-t bg-background/95 p-3 backdrop-blur" style={{ marginBottom: "env(safe-area-inset-bottom)" }}>
                 {dirty && <p className="mb-2 text-center text-xs font-medium text-amber-600">Cambios sin publicar</p>}
-                <Button className="h-12 w-full" disabled={!dirty || publishing} onClick={onPublish}>
-                    {publishing ? "Publicando…" : dirty ? "Publicar" : "Todo publicado"}
-                </Button>
+                <div className="flex gap-2">
+                    <Button variant="outline" className="h-12" onClick={() => setPreviewing(true)}>Vista previa</Button>
+                    <Button className="h-12 flex-1" disabled={!dirty || publishing} onClick={onPublish}>
+                        {publishing ? "Publicando…" : dirty ? "Publicar" : "Todo publicado"}
+                    </Button>
+                </div>
             </div>
 
+            <PreviewSheet open={previewing} store={store} onClose={() => setPreviewing(false)} />
             <ProductSheet product={editing} onClose={() => setEditing(null)} onSave={onSave} onDelete={onDelete} canDelete={menu.products.length > 1 && menu.products.some((x) => x.id === editing?.id)} />
         </>
     );

@@ -2,6 +2,8 @@
     "name": "waadafood-kiosko",
     "main": "src/index.ts",
     "compatibility_date": "2026-01-26",
+    // Bundle del kiosko (k.[hash].js), generado por `vite build` en public/assets.
+    "assets": { "directory": "./public", "binding": "ASSETS", "run_worker_first": true },
     // Producción: el kiosko atiende waadafood.com. El panel vive aparte en app.waadafood.com.
     "routes": [{ "pattern": "waadafood.com/*", "zone_name": "waadafood.com" }],
     "vars": { "CONVEX_SITE_URL": "https://strong-herring-329.convex.site" },

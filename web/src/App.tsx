@@ -9,6 +9,7 @@ import Pedidos from "./pages/Pedidos";
 import MenuPage from "./pages/MenuPage";
 import Reportes from "./pages/Reportes";
 import Cuenta from "./pages/Cuenta";
+import MiQR from "./pages/MiQR";
 
 function Protected({ children }: { children: React.ReactNode }) {
     const { isAuthenticated, isLoading, login } = useKindeAuth();
@@ -32,6 +33,7 @@ export default function App() {
                     <Route path="/menu" element={<MenuPage />} />
                     <Route path="/reportes" element={<Reportes />} />
                     <Route path="/cuenta" element={<Cuenta />} />
+                    <Route path="/cuenta/qr" element={<MiQR />} />
                 </Route>
                 <Route path="*" element={<Navigate to="/pedidos" replace />} />
             </Routes>

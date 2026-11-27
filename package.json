@@ -2,8 +2,9 @@
   "name": "waadafood",
   "private": true,
   "scripts": {
-    "dev": "npm --prefix web run dev",
-    "build": "npm --prefix web run build"
+    "dev": "pnpm -r --parallel --filter ./web --filter ./kiosko dev",
+    "convex": "convex dev",
+    "build": "pnpm --filter ./web build"
   },
   "dependencies": {
     "convex": "^1.31.5"

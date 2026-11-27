@@ -118,7 +118,7 @@ waadafood/
 └─ reference/prototipo.html
 ```
 
-`shared/` lo importan el kiosko y el panel (el panel usa `price.ts` y `limits.ts` para la vista previa). La vista previa del panel **no** reutiliza los componentes Preact del kiosko: se muestra en un `<iframe>` que carga `waadafood.com/{slug}?preview=1` con el borrador (ver 12.5).
+`shared/` lo importan el kiosko y el panel (el panel usa `price.ts` y `limits.ts` para la vista previa). La vista previa del panel **no** reutiliza los componentes Preact del kiosko: se muestra en un `<iframe>` que recibe el borrador por POST (ver §7 y 12.5).
 
 ---
 
@@ -316,7 +316,7 @@ Estructura del HTML devuelto:
 
 - **Escapar el JSON incrustado:** reemplazar `<` por `\u003c`, para que un `</script>` dentro del menú no rompa el HTML.
 - **Producto inicial:** aceptar `?p=hamburguesa` (lo ve el servidor) y `#hamburguesa` (lo resuelve el cliente al hidratar).
-- **Vista previa (`?preview=1`):** el kiosko no usa la caché, no registra embudo ni acepta pedidos, y espera el borrador por `postMessage` desde `https://app.waadafood.com` (se verifica el `origin`). Solo en este modo se permite que `app.waadafood.com` incruste la página (`frame-ancestors`).
+- **Vista previa (`POST /{slug}?preview=1`):** el panel envía el borrador como campo de formulario (`menu`, ≤ 100 KB) a un `<iframe>`. El Worker lo valida con una comprobación mínima de forma, lo renderiza con el mismo código y responde `Cache-Control: no-store`; no lee la caché, no guarda nada y no registra embudo. Solo `PANEL_ORIGIN` (por defecto `https://app.waadafood.com`) puede incrustarlo (`frame-ancestors`); el resto de las páginas llevan `frame-ancestors 'none'`. Un `GET` con `?preview=1` da 404.
 - **Horario:** si `store.hours` existe, el servidor calcula abierto o cerrado en `America/Guayaquil`.
 - **Cabeceras:** `Cache-Control: no-cache` para el HTML y una `Content-Security-Policy` estricta (`default-src 'self'`; `img-src 'self' data:`).
 - El hash del bundle se inyecta en el build (manifest de Vite) como constante del Worker.
@@ -332,20 +332,20 @@ hydrate(<Kiosko menu={menu} />, document.getElementById('app')!);
 
 ## 8. Flujo del kiosko (fijo)
 
-1. **Inicio:** carrusel horizontal con scroll-snap; un producto a pantalla completa (hero con su color y foto), nombre, descripción, "Desde $X" y el botón **Lo quiero**. Flechas y teclado ←/→. Botón "Pedido · N" arriba si hay ítems.
+**Un producto por pedido.** Producto → Variantes → Extras → Datos con ubicación → WhatsApp. No hay carrito ni pantalla de "agregar otro".
+
+1. **Inicio:** carrusel horizontal con scroll-snap (funciona sin JavaScript: flechas y puntos son anclas); un producto a pantalla completa (color y foto), nombre, descripción, "Desde $X" y el botón **Lo quiero**. Cerrado o agotado: el botón se desactiva.
 2. **Variante:** se salta si hay una sola. Tocar = elegir y avanzar.
-3. **Grupos:** uno por pantalla. `one` avanza al tocar; `many` usa chips con "Siguiente · $X" o "Continuar sin cambios".
-4. **Upsell** (si `product.upsell` y hay upsells): opciones grandes + "No, gracias".
-5. **Pedido:** líneas con detalle, −/+, "+ Agregar otro producto" y **Continuar · $total**.
-6. **Entrega:**
-   - A domicilio / Retiro en local (según la configuración).
+3. **Extras:** un grupo por pantalla. `one` avanza al tocar; `many` usa chips con "Siguiente · $X" o "Continuar sin cambios". El combo o la bebida son un grupo más (ej. "¿Lo hacemos combo?"); **no existe un paso de upsell aparte**.
+4. **Datos con ubicación:**
+   - A domicilio / Retiro en local (según la configuración del comercio).
    - **Usar mi ubicación** (`navigator.geolocation`, `enableHighAccuracy`, timeout 10 s). Requiere HTTPS. Muestra la precisión en metros.
    - Referencia escrita (obligatoria si no hay GPS; más de 5 caracteres).
    - Nombre (obligatorio).
    - Pago: efectivo o transferencia; si es efectivo, "¿Con cuánto pagas?" (opcional).
-7. **Enviar:** `<a href="https://wa.me/{phone}?text=…">` (enlace normal, no `window.open`). En el `onClick`: `navigator.sendBeacon('/api/pedido', payload)` y, a los 400 ms, se muestra "Pedido #XXXX listo", con reintento y el número del local visible como texto.
+5. **Enviar:** `<a href="https://wa.me/{phone}?text=…">` (enlace normal, no `window.open`). En el `onClick`: `navigator.sendBeacon('/api/pedido', payload)` y, a los 400 ms, se muestra "Pedido #XXXX listo", con el número del local visible como texto y "Hacer otro pedido". En la vista previa no se envía el aviso.
 
-El botón fijo inferior siempre muestra el total acumulado, con números tabulares.
+El botón "atrás" del navegador retrocede un paso (cada paso se guarda en el historial). El envío, si el comercio lo configuró, se suma al total y al mensaje.
 
 ### Mensaje de WhatsApp (`shared/message.ts`)
 ```
@@ -459,7 +459,7 @@ El dueño opera desde su teléfono, el mismo donde le llega el WhatsApp. **El pa
 
 ### 12.5 Pantallas
 - **Pedidos:** tarjetas grandes (código, hora relativa, total, domicilio o retiro), filtros Nuevos / En curso / Hechos. El detalle muestra ítems, **Abrir en Maps**, un mapa pequeño (Leaflet + OSM, cargado solo en esa pantalla), **Responder por WhatsApp** y los botones de estado.
-- **Menú:** lista de los ≤ 5 productos con interruptor de **Agotado**. Cada producto abre una hoja inferior con variantes, grupos y foto. **Vista previa** a pantalla completa: un `<iframe>` con `waadafood.com/{slug}?preview=1`, al que el panel envía el borrador por `postMessage` (el kiosko lo muestra sin leer la caché ni guardar pedidos). Indicador "Cambios sin publicar" y botón **Publicar** fijo abajo. No hay historial de versiones: publicar reemplaza lo anterior.
+- **Menú:** lista de los ≤ 5 productos con interruptor de **Agotado**. Cada producto abre una hoja inferior con variantes, grupos y foto. **Vista previa** a pantalla completa: un `<iframe>` al que el panel envía el borrador por POST (ver §7); el kiosko lo muestra sin leer la caché ni guardar pedidos. Indicador "Cambios sin publicar" y botón **Publicar** fijo abajo. No hay historial de versiones: publicar reemplaza lo anterior.
 - **Reportes:** ventas del día, la semana y el mes, ticket promedio, aceptación del upsell y el embudo.
 - **Cuenta:** datos del local, WhatsApp verificado, horario, plan y uso ("32 de 50 pedidos este mes"), link del kiosko con **Copiar** y **Compartir** (`navigator.share`), **Mi QR** (sección 12.6) y la opción de aparecer en el directorio.
 

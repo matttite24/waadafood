@@ -5,3 +5,5 @@ web/dist
 web/.env.local
 kiosko/.dev.vars
 .wrangler
+kiosko/public/assets
+kiosko/src/asset.gen.ts
