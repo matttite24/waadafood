@@ -32,6 +32,7 @@ export function layout(input: Menu, opts: { selected?: string | null; preview?: 
     return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>${esc(menu.store.name)} · Pide aquí</title>
+<meta name="description" content="${esc(`Pide en ${menu.store.name} en pocos toques. Tu pedido llega directo a su WhatsApp.`)}">
 <meta property="og:title" content="${esc(menu.store.name)} · Pide aquí">
 <meta name="theme-color" content="${safeColor(menu.store.color, "#C8321F")}">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%2716%27 fill=%27%23${safeColor(menu.store.color, "#C8321F").slice(1)}%27/%3E%3C/svg%3E">

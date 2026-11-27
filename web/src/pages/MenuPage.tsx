@@ -92,8 +92,8 @@ export default function MenuPage() {
                 <Button variant="outline" className="mt-3 h-12 w-full" onClick={() => setEditing(newProduct())}>+ Agregar producto</Button>
             )}
 
-            <div className="h-24" />
-            <div className="fixed inset-x-0 bottom-16 z-30 mx-auto max-w-md border-t bg-background/95 p-3 backdrop-blur" style={{ marginBottom: "env(safe-area-inset-bottom)" }}>
+            <div className="h-28" />
+            <div className="fixed inset-x-3 z-30 mx-auto max-w-sm rounded-2xl border border-black/5 bg-background/95 p-3 shadow-[0_8px_30px_rgba(0,0,0,0.10)] backdrop-blur-md" style={{ bottom: "calc(env(safe-area-inset-bottom) + 88px)" }}>
                 {dirty && <p className="mb-2 text-center text-xs font-medium text-amber-600">Cambios sin publicar</p>}
                 <div className="flex gap-2">
                     <Button variant="outline" className="h-12" onClick={() => setPreviewing(true)}>Vista previa</Button>
