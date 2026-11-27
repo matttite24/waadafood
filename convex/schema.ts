@@ -1,95 +1,94 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { vMenu } from "./menuValidators";
 
 export default defineSchema({
-    comercios: defineTable({
-        auth_user_id: v.string(), // Link to external user (Kinde/Clerk/any auth provider)
-        nombre_comercio: v.string(),
-        prompt_personalidad: v.optional(v.string()),
-        instrucciones_pago: v.optional(v.string()),
-        descripcion_corta: v.optional(v.string()),
-        direccion: v.optional(v.string()),
-        google_maps_link: v.optional(v.string()),
-        ciudad: v.optional(v.string()),
-        horario_atencion: v.optional(v.string()),
-        telefono_contacto: v.optional(v.string()),
-        nombre_asistente: v.optional(v.string()),
-        directrices_comunicacion: v.optional(v.string()),
-        imagenes_menu: v.optional(v.array(v.string())),
-        ia_activa: v.optional(v.boolean()),
-        pago_efectivo: v.optional(v.boolean()),
-        pago_transferencia: v.optional(v.boolean()),
-        tiempos_preparacion: v.optional(v.string()),
-        tiempo_limite_cierre: v.optional(v.number()),
-        reglas_escalacion: v.optional(v.string()),
-        creditos: v.optional(v.number()),
-        ia_estilo: v.optional(v.string()), // "amigable", "profesional", "relajado"
-    }).index("by_user", ["auth_user_id"]),
+    stores: defineTable({
+        ownerId: v.string(), // `sub` del token de Kinde
+        slug: v.string(),
+        name: v.string(),
+        waNumber: v.string(),
+        waVerified: v.boolean(),
+        plan: v.union(v.literal("free"), v.literal("pro")),
+        planUntil: v.optional(v.number()),
+        draftMenu: vMenu,
+        publishedMenu: v.optional(vMenu),
+        publishedVersion: v.number(),
+        lat: v.optional(v.number()),
+        lng: v.optional(v.number()),
+        category: v.optional(v.string()),
+        directoryOptIn: v.boolean(),
+        createdAt: v.number(),
+    })
+        .index("by_slug", ["slug"])
+        .index("by_owner", ["ownerId"])
+        .index("by_wa", ["waNumber"]),
 
-    clientes: defineTable({
-        comercio_id: v.id("comercios"),
-        telefono: v.string(),
-        nombre_usuario: v.optional(v.string()),
-        asistente_activo: v.boolean(), // asistente_activo en Supabase
-        requiere_atencion_humana: v.boolean(),
-        motivo_escalacion: v.optional(v.string()),
-        pedido_actual: v.optional(v.any()), // JSON en Supabase
+    menuVersions: defineTable({
+        storeId: v.id("stores"),
+        version: v.number(),
+        menu: vMenu,
+        publishedAt: v.number(),
+    }).index("by_store", ["storeId"]),
 
-        // Denormalized fields for list performance
-        ultimo_mensaje_contenido: v.optional(v.string()),
-        ultimo_mensaje_fecha: v.optional(v.string()),
-        ultimo_mensaje_es_ia: v.optional(v.boolean()),
-        ultimo_mensaje_es_dueno: v.optional(v.boolean()),
-        ultima_direccion: v.optional(v.string()),
-        archivado: v.optional(v.boolean()),
-        tiene_mensajes_sin_leer: v.optional(v.boolean()),
-        etiquetas_ids: v.optional(v.array(v.id("etiquetas"))),
-    }).index("by_telefono", ["telefono", "comercio_id"])
-        .index("by_comercio_update", ["comercio_id", "ultimo_mensaje_fecha"])
-        .index("by_comercio", ["comercio_id"]),
+    orders: defineTable({
+        storeId: v.id("stores"),
+        code: v.string(),
+        sessionId: v.string(),
+        items: v.array(v.any()),
+        clientTotal: v.number(),
+        serverTotal: v.number(),
+        mismatch: v.boolean(),
+        customerName: v.string(),
+        mode: v.union(v.literal("domicilio"), v.literal("retiro")),
+        lat: v.optional(v.number()),
+        lng: v.optional(v.number()),
+        accuracy: v.optional(v.number()),
+        reference: v.optional(v.string()),
+        payment: v.string(),
+        cashAmount: v.optional(v.number()),
+        status: v.union(
+            v.literal("enviado"),
+            v.literal("confirmado"),
+            v.literal("entregado"),
+            v.literal("cancelado"),
+        ),
+        src: v.optional(v.string()),
+        monthKey: v.string(),
+        monthSeq: v.number(),
+        createdAt: v.number(),
+    })
+        .index("by_store_created", ["storeId", "createdAt"])
+        .index("by_store_session_code", ["storeId", "sessionId", "code"]),
 
-    mensajes: defineTable({
-        comercio_id: v.id("comercios"),
-        cliente_id: v.id("clientes"),
-        contenido: v.string(),
-        es_ia: v.boolean(),
-        es_dueno: v.boolean(),
-        imagenes: v.optional(v.array(v.string())),
-    }).index("by_cliente", ["cliente_id"])
-        .index("by_comercio", ["comercio_id"]),
+    counters: defineTable({
+        storeId: v.id("stores"),
+        monthKey: v.string(),
+        orders: v.number(),
+    }).index("by_store_month", ["storeId", "monthKey"]),
 
-    productos: defineTable({
-        comercio_id: v.id("comercios"),
-        nombre: v.string(),
-        descripcion: v.optional(v.string()),
-        precio: v.number(),
-        categoria: v.string(),
-        imagen_url: v.optional(v.string()),
-        disponible: v.boolean(),
-    }).index("by_comercio", ["comercio_id"]),
+    dailyStats: defineTable({
+        storeId: v.id("stores"),
+        day: v.string(),
+        orders: v.number(),
+        revenue: v.number(),
+        upsellOrders: v.number(),
+        deliveryOrders: v.number(),
+    }).index("by_store_day", ["storeId", "day"]),
 
-    pedidos: defineTable({
-        comercio_id: v.id("comercios"),
-        cliente_id: v.optional(v.id("clientes")),
-        estado: v.string(), // "pendiente", "preparado", "entregado", "cancelado", "borrador"
-        total: v.number(),
-        resumen_pedido: v.optional(v.any()),
-        detalles: v.optional(v.any()),
-        cliente_nombre: v.optional(v.string()),
-        cliente_telefono: v.optional(v.string()),
-        direccion_entrega: v.optional(v.string()),
-    }).index("by_comercio", ["comercio_id"])
-        .index("by_cliente", ["cliente_id"]),
+    funnel: defineTable({
+        storeId: v.id("stores"),
+        day: v.string(),
+        step: v.string(),
+        count: v.number(),
+    }).index("by_store_day_step", ["storeId", "day", "step"]),
 
-    plantillas: defineTable({
-        comercio_id: v.id("comercios"),
-        nombre: v.string(), // El atajo, ej: "saludo"
-        contenido: v.string(), // El mensaje completo
-    }).index("by_comercio", ["comercio_id"]),
-
-    etiquetas: defineTable({
-        comercio_id: v.id("comercios"),
-        nombre: v.string(),
-        color: v.string(), // Hex color
-    }).index("by_comercio", ["comercio_id"]),
+    pushSubs: defineTable({
+        storeId: v.id("stores"),
+        endpoint: v.string(),
+        keys: v.object({ p256dh: v.string(), auth: v.string() }),
+        createdAt: v.number(),
+    })
+        .index("by_store", ["storeId"])
+        .index("by_endpoint", ["endpoint"]),
 });

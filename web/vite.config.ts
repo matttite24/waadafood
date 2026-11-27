@@ -8,7 +8,6 @@ export default defineConfig({
     resolve: {
         alias: {
             '@': path.resolve(__dirname, './src'),
-            '@shared': path.resolve(__dirname, '../shared'),
             '@convex': path.resolve(__dirname, '../convex'),
             // Explicitly resolve convex sub-paths to local node_modules
             'convex/server': path.resolve(__dirname, './node_modules/convex/server'),
