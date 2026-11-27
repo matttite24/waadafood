@@ -81,10 +81,6 @@ export function Kiosko({ menu, open, onPick }: { menu: Menu; open: boolean; onPi
                     <Slide key={p.id} p={p} open={open} i={i} n={products.length} onPick={onPick} />
                 ))}
             </div>
-            <footer class="foot">
-                Pide con Waada ·{" "}
-                <a href={`https://waadafood.com/?ref=${encodeURIComponent(store.slug)}`}>¿Tienes restaurante? Recibe pedidos así →</a>
-            </footer>
         </div>
     );
 }

@@ -142,14 +142,19 @@ export function App({ menu, open, preview }: Props) {
         };
         return shell(
             g.title || "¿Quieres agregar algo?",
-            <div class="chips2">
-                {g.options.map((o) => (
-                    <button type="button" class={chosen.includes(o.id) ? "chip2 on" : "chip2"} aria-pressed={chosen.includes(o.id)} onClick={() => toggle(o.id)}>
-                        {g.prefix ? `${g.prefix} ` : ""}{o.label}{o.price > 0 && <small> +{money(o.price)}</small>}
-                    </button>
-                ))}
-            </div>,
-            <button type="button" class="cta2" onClick={() => advance(flow.picks)}>{chosen.length === 0 ? "No, gracias" : `Listo · ${money(total)}`}</button>,
+            <>
+                <div class="chips2">
+                    {g.options.map((o) => (
+                        <button type="button" class={chosen.includes(o.id) ? "chip2 on" : "chip2"} aria-pressed={chosen.includes(o.id)} onClick={() => toggle(o.id)}>
+                            {g.prefix ? `${g.prefix} ` : ""}{o.label}{o.price > 0 && <small> +{money(o.price)}</small>}
+                        </button>
+                    ))}
+                </div>
+                <div class="sep" />
+                {/* Siempre hay una respuesta explícita: elegir extras o «Sin extras». No se puede avanzar sin decidir. */}
+                <button type="button" class="opt2" onClick={() => advance({ ...flow.picks, [g.id]: [] })}><span>Sin extras</span></button>
+            </>,
+            chosen.length > 0 ? <button type="button" class="cta2" onClick={() => advance(flow.picks)}>{`Agregar y continuar · ${money(total)}`}</button> : undefined,
         );
     }
 
@@ -163,8 +168,11 @@ export function App({ menu, open, preview }: Props) {
 
     // step === "sent"
     return (
-        <Shell bg={bg} name={product.name} detail="" total={money(total)} title={`Pedido #${flow.code} listo`} center
-            footer={<button type="button" class="cta2" onClick={() => go(HOME)}>Hacer otro pedido</button>}>
+        <Shell bg={bg} name={product.name} detail="" total={money(total)} title={`Pedido #${flow.code} listo`}
+            footer={<>
+                <button type="button" class="cta2" onClick={() => go(HOME)}>Hacer otro pedido</button>
+                <a class="promo" href={`https://waadafood.com/?ref=${encodeURIComponent(store.slug)}`}>Pide con Waada · ¿Tienes restaurante? Recibe pedidos así →</a>
+            </>}>
             <p>Se abrió WhatsApp con tu pedido. Solo falta que pulses <b>Enviar</b> allí.</p>
             <p class="note2">¿No se abrió? Escríbenos al <b class="num">+{store.phone}</b> con el código #{flow.code}.</p>
         </Shell>
@@ -175,7 +183,7 @@ export function App({ menu, open, preview }: Props) {
 
 function Shell(p: {
     bg: string; name: string; detail: string; total: string; title: string; children: ComponentChildren;
-    footer?: ComponentChildren; onBack?: () => void; center?: boolean;
+    footer?: ComponentChildren; onBack?: () => void;
 }) {
     return (
         <div class="k flow" style={`--bg:${p.bg};--ink:${ink(p.bg)}`}>
@@ -184,9 +192,11 @@ function Shell(p: {
                 <div class="sum"><b>{p.name}</b>{p.detail && <small>{p.detail}</small>}</div>
                 <span class="tot num">{p.total}</span>
             </header>
-            <main class={p.center ? "fbody center" : "fbody"}>
-                <h2>{p.title}</h2>
-                {p.children}
+            <main class="fbody">
+                <div class="mid">
+                    <h2>{p.title}</h2>
+                    {p.children}
+                </div>
             </main>
             {p.footer && <footer class="fbar">{p.footer}</footer>}
         </div>
@@ -223,10 +233,10 @@ function Where({ flow, store, onNext, onPatch }: { flow: Flow; store: Menu["stor
     if (view === "choose") {
         return (
             <>
-                <button type="button" class="opt2" onClick={locate}><span>Enviar mi ubicación<small>Te lo llevamos a donde estás</small></span><span>📍</span></button>
+                <button type="button" class="opt2" onClick={locate}><span>Enviar mi ubicación<small>Te lo llevamos a donde estás</small></span></button>
                 {store.delivery.pickup && (
                     <button type="button" class="opt2" onClick={() => onNext({ ...flow, step: "name", mode: "retiro", geo: undefined, ref: undefined })}>
-                        <span>Retiro en el local<small>Pasas a recogerlo</small></span><span>🛍️</span>
+                        <span>Retiro en el local<small>Pasas a recogerlo</small></span>
                     </button>
                 )}
                 <button type="button" class="note2 linkbtn" onClick={enterDelivery}>Prefiero escribir mi dirección</button>
@@ -241,7 +251,7 @@ function Where({ flow, store, onNext, onPatch }: { flow: Flow; store: Menu["stor
             {locating && <p class="note2">Buscando tu ubicación…</p>}
             {geo && <p class="note2">✓ Ubicación lista (±{Math.round(geo.acc)} m)</p>}
             {msg && <p class="err2">{msg}</p>}
-            {!geo && !locating && <button type="button" class="opt2" onClick={locate}><span>Enviar mi ubicación</span><span>📍</span></button>}
+            {!geo && !locating && <button type="button" class="opt2" onClick={locate}><span>Enviar mi ubicación</span></button>}
             <input class="in2" value={ref} onInput={(e) => setRef((e.target as HTMLInputElement).value)} enterKeyHint="next" autocomplete="street-address"
                 placeholder={geo ? "Referencia (opcional)" : "Tu dirección o referencia"} aria-label="Referencia de entrega" />
             {store.delivery.note && <p class="note2">{store.delivery.note}</p>}
@@ -315,7 +325,7 @@ function Pay({ flow, menu, product, sel, preview, onSent }: {
         <>
             {store.payments.length > 1 && store.payments.map((p) => (
                 <button type="button" class={payment === p ? "opt2 on" : "opt2"} aria-pressed={payment === p} onClick={() => { setPayment(p); if (p !== "efectivo") setCash(undefined); }}>
-                    <span>{p === "efectivo" ? "Efectivo" : "Transferencia"}</span><span>{p === "efectivo" ? "💵" : "🏦"}</span>
+                    <span>{p === "efectivo" ? "Efectivo" : "Transferencia"}</span>
                 </button>
             ))}
             {store.payments.length === 1 && <p class="note2">Pagas con {store.payments[0]}.</p>}
