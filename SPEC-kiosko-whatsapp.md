@@ -342,7 +342,7 @@ hydrate(<Kiosko menu={menu} />, document.getElementById('app')!);
    - **Usar mi ubicación** (`navigator.geolocation`, `enableHighAccuracy`, timeout 10 s). Requiere HTTPS. Muestra la precisión en metros.
    - Referencia escrita (obligatoria si no hay GPS; más de 5 caracteres).
    - Nombre (obligatorio).
-   - Pago: efectivo o transferencia; si es efectivo, "¿Con cuánto pagas?" (opcional).
+   - Pago: efectivo o transferencia. No se pregunta "¿con cuánto pagas?": confundía y el cambio se arregla por WhatsApp.
 5. **Enviar:** `<a href="https://wa.me/{phone}?text=…">` (enlace normal, no `window.open`). En el `onClick`: `navigator.sendBeacon('/api/pedido', payload)` y, a los 400 ms, se muestra "Pedido #XXXX listo", con el número del local visible como texto y "Hacer otro pedido". En la vista previa no se envía el aviso.
 
 El botón "atrás" del navegador retrocede un paso (cada paso se guarda en el historial). El envío, si el comercio lo configuró, se suma al total y al mensaje.

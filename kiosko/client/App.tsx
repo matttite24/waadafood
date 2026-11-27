@@ -22,7 +22,6 @@ interface Flow {
     ref?: string;
     name?: string;
     payment?: "efectivo" | "transferencia";
-    cash?: number;
 }
 
 const HOME: Flow = { step: "home", picks: {}, gi: 0 };
@@ -296,14 +295,12 @@ function Pay({ flow, menu, product, sel, preview, onSent }: {
 }) {
     const { store } = menu;
     const [payment, setPayment] = useState<Flow["payment"]>(flow.payment ?? (store.payments.length === 1 ? store.payments[0] : undefined));
-    const [cash, setCash] = useState<number | undefined>(flow.cash);
 
     const input: OrderInput = {
         code: flow.code ?? newCode(), store, product, sel, mode: flow.mode ?? "retiro", name: flow.name ?? "",
-        lat: flow.geo?.lat, lng: flow.geo?.lng, reference: flow.ref, payment: payment ?? store.payments[0], cashAmount: payment === "efectivo" ? cash : undefined,
+        lat: flow.geo?.lat, lng: flow.geo?.lng, reference: flow.ref, payment: payment ?? store.payments[0],
     };
     const total = orderTotal(input);
-    const bills = [10, 20, 50, 100].filter((b) => b >= Math.ceil(total)).slice(0, 3);
     const valid = !!payment;
 
     function onSend(e: MouseEvent) {
@@ -313,7 +310,7 @@ function Pay({ flow, menu, product, sel, preview, onSent }: {
             const payload = {
                 sessionId: sessionId(), code: input.code, slug: store.slug, productId: product.id, variantId: sel.variantId, picks: sel.picks,
                 mode: input.mode, name: input.name, lat: flow.geo?.lat, lng: flow.geo?.lng, accuracy: flow.geo?.acc,
-                reference: flow.ref, payment, cashAmount: input.cashAmount, clientTotal: total,
+                reference: flow.ref, payment, clientTotal: total,
                 src: new URLSearchParams(location.search).get("src") ?? undefined,
             };
             try { navigator.sendBeacon("/api/pedido", new Blob([JSON.stringify(payload)], { type: "application/json" })); } catch { /* sin red: igual abre WhatsApp */ }
@@ -324,20 +321,11 @@ function Pay({ flow, menu, product, sel, preview, onSent }: {
     return (
         <>
             {store.payments.length > 1 && store.payments.map((p) => (
-                <button type="button" class={payment === p ? "opt2 on" : "opt2"} aria-pressed={payment === p} onClick={() => { setPayment(p); if (p !== "efectivo") setCash(undefined); }}>
+                <button type="button" class={payment === p ? "opt2 on" : "opt2"} aria-pressed={payment === p} onClick={() => setPayment(p)}>
                     <span>{p === "efectivo" ? "Efectivo" : "Transferencia"}</span>
                 </button>
             ))}
             {store.payments.length === 1 && <p class="note2">Pagas con {store.payments[0]}.</p>}
-            {payment === "efectivo" && (
-                <>
-                    <p class="note2">¿Con cuánto pagas?</p>
-                    <div class="chips2">
-                        <button type="button" class={cash === undefined ? "chip2 on" : "chip2"} onClick={() => setCash(undefined)}>Justo</button>
-                        {bills.map((b) => <button type="button" class={cash === b ? "chip2 on" : "chip2"} onClick={() => setCash(b)}>${b}</button>)}
-                    </div>
-                </>
-            )}
             <a class={valid ? "cta2 wa inline" : "cta2 wa inline off"} href={valid ? waLink(store.phone, buildMessage(input)) : undefined} aria-disabled={!valid} onClick={onSend as unknown as (e: Event) => void}>
                 Enviar por WhatsApp · <span class="num">{money(total)}</span>
             </a>
