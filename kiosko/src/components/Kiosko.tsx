@@ -6,7 +6,7 @@ const HEX = /^#[0-9a-fA-F]{6}$/;
 export const safeColor = (c: string, fallback = "#F4C542") => (HEX.test(c) ? c : fallback);
 
 /** Texto oscuro o claro según la luminosidad del fondo (contraste legible con cualquier color de marca). */
-function ink(bg: string): string {
+export function ink(bg: string): string {
     const n = parseInt(safeColor(bg).slice(1), 16);
     const lum = (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
     return lum > 0.6 ? "#1a1412" : "#ffffff";

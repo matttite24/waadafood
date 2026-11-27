@@ -336,7 +336,7 @@ hydrate(<Kiosko menu={menu} />, document.getElementById('app')!);
 
 1. **Inicio:** carrusel horizontal con scroll-snap (funciona sin JavaScript: flechas y puntos son anclas); un producto a pantalla completa (color y foto), nombre, descripción, "Desde $X" y el botón **Lo quiero**. Cerrado o agotado: el botón se desactiva.
 2. **Variante:** se salta si hay una sola. Tocar = elegir y avanzar.
-3. **Extras:** un grupo por pantalla. `one` avanza al tocar; `many` usa chips con "Siguiente · $X" o "Continuar sin cambios". El combo o la bebida son un grupo más (ej. "¿Lo hacemos combo?"); **no existe un paso de upsell aparte**.
+3. **Extras:** el panel crea un solo grupo de "elegir varias" por producto (ej.: Bebida $1, Papas extras $2), que el cliente agrega si quiere. El kiosko y el servidor siguen aceptando varios grupos por compatibilidad. Un grupo por pantalla. `one` avanza al tocar; `many` usa chips con "Siguiente · $X" o "Continuar sin cambios". **El upsell (ofrecer un combo o bebida al final) se rediseñará aparte**; hoy no hay un paso de upsell.
 4. **Datos con ubicación:**
    - A domicilio / Retiro en local (según la configuración del comercio).
    - **Usar mi ubicación** (`navigator.geolocation`, `enableHighAccuracy`, timeout 10 s). Requiere HTTPS. Muestra la precisión en metros.

@@ -1,21 +1,34 @@
-import { useState, useEffect } from "preact/hooks";
-import { Kiosko, safeColor } from "../src/components/Kiosko";
+import { useState, useEffect, useRef } from "preact/hooks";
+import type { ComponentChildren } from "preact";
+import { Kiosko, safeColor, ink } from "../src/components/Kiosko";
 import type { Menu, Product } from "../../shared/types";
-import { money, productTotal, deliveryFee, variantOf, type Selection } from "../../shared/price";
-import { buildMessage, orderTotal, waLink } from "../../shared/message";
+import { money, productTotal, deliveryFee, optionsOf, variantOf, type Selection } from "../../shared/price";
+import { buildMessage, orderTotal, waLink, type OrderInput } from "../../shared/message";
 
-/** Estado del flujo. Es serializable para guardarlo en el historial y que "atrás" funcione. */
+/**
+ * Flujo de compra (un producto por pedido), una decisión por pantalla:
+ *   producto → variantes → extras → dónde → nombre → pago → WhatsApp
+ * Las pantallas sin nada que elegir se saltan solas. El estado es serializable para que "atrás" funcione.
+ */
 interface Flow {
-    step: "home" | "variant" | "group" | "checkout" | "sent";
+    step: "home" | "variant" | "group" | "where" | "name" | "pay" | "sent";
     pid?: string;
     variantId?: string;
     picks: Record<string, string[]>;
     gi: number;
     code?: string;
+    mode?: "domicilio" | "retiro";
+    geo?: { lat: number; lng: number; acc: number };
+    ref?: string;
+    name?: string;
+    payment?: "efectivo" | "transferencia";
+    cash?: number;
 }
 
 const HOME: Flow = { step: "home", picks: {}, gi: 0 };
 const CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+// Nombres de ejemplo que van rotando en el campo: una invitación a escribir el propio.
+const NAMES = ["Juan", "María", "Diego", "Sofía", "Miguel", "Camila", "Carlos", "Valeria", "Mateo", "Ana", "Luis", "Daniela", "Andrés", "Paola", "José", "Lucía"];
 
 function newCode(): string {
     const b = crypto.getRandomValues(new Uint8Array(4));
@@ -32,10 +45,30 @@ function sessionId(): string {
     }
 }
 
+/** En el iPhone el teclado tapa la página en vez de achicarla: se ajusta la pantalla al área visible para que el botón no quede escondido. */
+function useVisibleViewport(active: boolean) {
+    useEffect(() => {
+        const vv = window.visualViewport;
+        if (!active || !vv) return;
+        const root = document.documentElement.style;
+        const set = () => { root.setProperty("--vvh", `${vv.height}px`); root.setProperty("--vvt", `${vv.offsetTop}px`); };
+        set();
+        vv.addEventListener("resize", set);
+        vv.addEventListener("scroll", set);
+        return () => {
+            vv.removeEventListener("resize", set);
+            vv.removeEventListener("scroll", set);
+            root.removeProperty("--vvh");
+            root.removeProperty("--vvt");
+        };
+    }, [active]);
+}
+
 interface Props { menu: Menu; open: boolean; preview: boolean }
 
 export function App({ menu, open, preview }: Props) {
     const [flow, setFlow] = useState<Flow>(HOME);
+    const { store } = menu;
 
     useEffect(() => {
         history.replaceState(HOME, "");
@@ -43,6 +76,7 @@ export function App({ menu, open, preview }: Props) {
         addEventListener("popstate", onPop);
         return () => removeEventListener("popstate", onPop);
     }, []);
+    useVisibleViewport(flow.step !== "home");
 
     const go = (next: Flow) => { history.pushState(next, ""); setFlow(next); };
     const patch = (next: Flow) => { history.replaceState(next, ""); setFlow(next); };
@@ -50,48 +84,40 @@ export function App({ menu, open, preview }: Props) {
     const product = menu.products.find((p) => p.id === flow.pid);
     const sel: Selection = { variantId: flow.variantId ?? product?.variants[0].id ?? "", picks: flow.picks };
 
-    const afterVariant = (p: Product, variantId: string, picks: Flow["picks"]): Flow =>
-        p.groups.length > 0
-            ? { step: "group", pid: p.id, variantId, picks, gi: 0 }
-            : { step: "checkout", pid: p.id, variantId, picks, gi: 0, code: newCode() };
+    /** Tras variantes y extras: si no hay domicilio, no hay nada que preguntar sobre ubicación. */
+    const toWhere = (f: Flow): Flow => (store.delivery.enabled ? { ...f, step: "where" } : { ...f, step: "name", mode: "retiro" });
+    const afterVariant = (p: Product, variantId: string, f: Flow): Flow =>
+        p.groups.length > 0 ? { ...f, step: "group", variantId, gi: 0 } : toWhere({ ...f, variantId });
 
     function pick(p: Product) {
-        if (p.variants.length > 1) go({ step: "variant", pid: p.id, picks: {}, gi: 0 });
-        else go(afterVariant(p, p.variants[0].id, {}));
+        const base: Flow = { step: "variant", pid: p.id, picks: {}, gi: 0, code: newCode() };
+        go(p.variants.length > 1 ? base : afterVariant(p, p.variants[0].id, base));
     }
 
-    const brand = safeColor(menu.store.color, "#C8321F");
+    if (flow.step === "home" || !product) return <Kiosko menu={menu} open={open} onPick={pick} />;
 
-    if (flow.step === "home" || !product) {
-        return <Kiosko menu={menu} open={open} onPick={pick} />;
-    }
+    // Fondo de las pantallas del flujo: el color del producto o, si tiene foto, el color de la marca.
+    const bg = product.image ? safeColor(store.color, "#C8321F") : safeColor(product.color);
+    const mode = flow.mode ?? "retiro";
+    const total = Math.round((productTotal(product, sel) + deliveryFee(flow.mode ?? "retiro", store.delivery.fee)) * 100) / 100;
 
-    const shell = (title: string, body: preact.ComponentChildren, bar: preact.ComponentChildren) => (
-        <div class="k flow" style={`--brand:${brand}`}>
-            <header class="fhead">
-                <button type="button" class="back" aria-label="Atrás" onClick={() => history.back()}>‹</button>
-                <span>{menu.store.name}</span>
-            </header>
-            <main class="fbody">
-                <h2>{title}</h2>
-                {body}
-            </main>
-            <footer class="fbar">{bar}</footer>
-        </div>
+    const extrasText = optionsOf(product, sel).map((x) => x.option.label).join(", ");
+    const variantText = product.variants.length > 1 ? variantOf(product, sel).label : "";
+    const shell = (title: string, body: ComponentChildren, footer?: ComponentChildren) => (
+        <Shell bg={bg} onBack={() => history.back()} name={product.name} detail={[variantText, extrasText].filter(Boolean).join(" · ")} total={money(total)} title={title} footer={footer}>
+            {body}
+        </Shell>
     );
-
-    const total = productTotal(product, sel);
 
     if (flow.step === "variant") {
         return shell(
-            `${product.name}: ¿cuál?`,
+            "¿Cuál prefieres?",
             product.variants.map((v) => (
-                <button type="button" class="opt" onClick={() => go(afterVariant(product, v.id, {}))}>
-                    <span><b>{v.label}</b>{v.note && <small>{v.note}</small>}</span>
+                <button type="button" class="opt2" onClick={() => go(afterVariant(product, v.id, { ...flow }))}>
+                    <span>{v.label}{v.note && <small>{v.note}</small>}</span>
                     <span class="num">{money(v.price)}</span>
                 </button>
             )),
-            <div class="total"><span>{product.name}</span><span class="num">Desde {money(Math.min(...product.variants.map((v) => v.price)))}</span></div>,
         );
     }
 
@@ -100,19 +126,14 @@ export function App({ menu, open, preview }: Props) {
         const chosen = flow.picks[g.id] ?? [];
         const advance = (picks: Flow["picks"]) => {
             const gi = flow.gi + 1;
-            if (gi < product.groups.length) go({ ...flow, picks, gi });
-            else go({ step: "checkout", pid: product.id, variantId: flow.variantId, picks, gi: 0, code: newCode() });
+            go(gi < product.groups.length ? { ...flow, picks, gi } : toWhere({ ...flow, picks }));
         };
         if (g.type === "one") {
-            return shell(
-                g.title || "Elige una opción",
-                g.options.map((o) => (
-                    <button type="button" class="opt" onClick={() => advance({ ...flow.picks, [g.id]: [o.id] })}>
-                        <b>{o.label}</b><span class="num">{o.price > 0 ? `+${money(o.price)}` : ""}</span>
-                    </button>
-                )),
-                <div class="total"><span>Total</span><span class="num">{money(total)}</span></div>,
-            );
+            return shell(g.title || "Elige una opción", g.options.map((o) => (
+                <button type="button" class="opt2" onClick={() => advance({ ...flow.picks, [g.id]: [o.id] })}>
+                    <span>{o.label}</span><span class="num">{o.price > 0 ? `+${money(o.price)}` : ""}</span>
+                </button>
+            )));
         }
         const toggle = (id: string) => {
             const on = chosen.includes(id);
@@ -120,156 +141,196 @@ export function App({ menu, open, preview }: Props) {
             patch({ ...flow, picks: { ...flow.picks, [g.id]: on ? chosen.filter((x) => x !== id) : [...chosen, id] } });
         };
         return shell(
-            g.title || "¿Le agregamos algo?",
-            <div class="chips">
+            g.title || "¿Quieres agregar algo?",
+            <div class="chips2">
                 {g.options.map((o) => (
-                    <button type="button" class={chosen.includes(o.id) ? "chip on" : "chip"} aria-pressed={chosen.includes(o.id)} onClick={() => toggle(o.id)}>
+                    <button type="button" class={chosen.includes(o.id) ? "chip2 on" : "chip2"} aria-pressed={chosen.includes(o.id)} onClick={() => toggle(o.id)}>
                         {g.prefix ? `${g.prefix} ` : ""}{o.label}{o.price > 0 && <small> +{money(o.price)}</small>}
                     </button>
                 ))}
             </div>,
-            <button type="button" class="cta" onClick={() => advance(flow.picks)}>
-                {chosen.length === 0 ? "Continuar sin cambios" : `Siguiente · ${money(total)}`}
-            </button>,
+            <button type="button" class="cta2" onClick={() => advance(flow.picks)}>{chosen.length === 0 ? "No, gracias" : `Listo · ${money(total)}`}</button>,
         );
     }
 
-    if (flow.step === "checkout") {
-        return <Checkout menu={menu} product={product} sel={sel} code={flow.code ?? newCode()} preview={preview} brand={brand}
-            onBack={() => history.back()} onSent={() => patch({ ...flow, step: "sent" })} />;
+    if (flow.step === "where") return shell("¿Dónde te lo llevamos?", <Where flow={flow} store={store} onNext={go} onPatch={patch} />);
+    if (flow.step === "name") return shell("¿Tu nombre es…?", <Name flow={flow} onNext={go} />);
+
+    if (flow.step === "pay") {
+        return shell("¿Cómo pagas?", <Pay flow={flow} menu={menu} product={product} sel={sel} preview={preview}
+            onSent={() => patch({ ...flow, step: "sent" })} />);
     }
 
     // step === "sent"
-    return <Sent menu={menu} product={product} sel={sel} code={flow.code ?? ""} brand={brand} onAgain={() => go(HOME)} />;
+    return (
+        <Shell bg={bg} name={product.name} detail="" total={money(total)} title={`Pedido #${flow.code} listo`} center
+            footer={<button type="button" class="cta2" onClick={() => go(HOME)}>Hacer otro pedido</button>}>
+            <p>Se abrió WhatsApp con tu pedido. Solo falta que pulses <b>Enviar</b> allí.</p>
+            <p class="note2">¿No se abrió? Escríbenos al <b class="num">+{store.phone}</b> con el código #{flow.code}.</p>
+        </Shell>
+    );
 }
 
-/* ───────────────────────── Datos con ubicación ───────────────────────── */
+/* ───────────────────────── Estructura común ───────────────────────── */
 
-interface Geo { lat: number; lng: number; accuracy: number }
-
-function Checkout(props: {
-    menu: Menu; product: Product; sel: Selection; code: string; preview: boolean; brand: string; onBack: () => void; onSent: () => void;
+function Shell(p: {
+    bg: string; name: string; detail: string; total: string; title: string; children: ComponentChildren;
+    footer?: ComponentChildren; onBack?: () => void; center?: boolean;
 }) {
-    const { menu, product, sel, code, preview, brand } = props;
-    const { store } = menu;
-    const [mode, setMode] = useState<"domicilio" | "retiro">(store.delivery.enabled ? "domicilio" : "retiro");
-    const [name, setName] = useState("");
-    const [reference, setReference] = useState("");
-    const [payment, setPayment] = useState<"efectivo" | "transferencia">(store.payments[0]);
-    const [cash, setCash] = useState("");
-    const [geo, setGeo] = useState<Geo | null>(null);
-    const [geoMsg, setGeoMsg] = useState("");
+    return (
+        <div class="k flow" style={`--bg:${p.bg};--ink:${ink(p.bg)}`}>
+            <header class="top2">
+                {p.onBack ? <button type="button" class="back" aria-label="Atrás" onClick={p.onBack}>‹</button> : <span class="back" />}
+                <div class="sum"><b>{p.name}</b>{p.detail && <small>{p.detail}</small>}</div>
+                <span class="tot num">{p.total}</span>
+            </header>
+            <main class={p.center ? "fbody center" : "fbody"}>
+                <h2>{p.title}</h2>
+                {p.children}
+            </main>
+            {p.footer && <footer class="fbar">{p.footer}</footer>}
+        </div>
+    );
+}
+
+/* ───────────────────────── 4. Dónde ───────────────────────── */
+
+function Where({ flow, store, onNext, onPatch }: { flow: Flow; store: Menu["store"]; onNext: (f: Flow) => void; onPatch: (f: Flow) => void }) {
+    const [view, setView] = useState<"choose" | "delivery">(flow.mode === "domicilio" ? "delivery" : "choose");
+    const [geo, setGeo] = useState(flow.geo);
+    const [ref, setRef] = useState(flow.ref ?? "");
+    const [msg, setMsg] = useState("");
     const [locating, setLocating] = useState(false);
 
-    const cashAmount = parseFloat(cash.replace(",", ".")) || undefined;
-    const input = { code, store, product, sel, mode, name, lat: geo?.lat, lng: geo?.lng, reference, payment, cashAmount };
-    const total = orderTotal(input);
-    const fee = deliveryFee(mode, store.delivery.fee);
-
-    const valid = name.trim().length >= 2 && (mode === "retiro" || !!geo || reference.trim().length > 5);
+    /** Al elegir domicilio, el envío se suma al total de inmediato (no al pasar a la siguiente pantalla). */
+    function enterDelivery() {
+        setView("delivery");
+        onPatch({ ...flow, mode: "domicilio" });
+    }
 
     function locate() {
-        if (!navigator.geolocation) { setGeoMsg("Tu navegador no permite ubicación. Escribe una referencia."); return; }
+        enterDelivery();
+        if (!navigator.geolocation) { setMsg("Tu navegador no permite ubicación. Escribe tu dirección."); return; }
         setLocating(true);
-        setGeoMsg("");
+        setMsg("");
         navigator.geolocation.getCurrentPosition(
-            (p) => { setLocating(false); setGeo({ lat: p.coords.latitude, lng: p.coords.longitude, accuracy: p.coords.accuracy }); },
-            () => { setLocating(false); setGeoMsg("No pudimos obtener tu ubicación. Escribe una referencia."); },
+            (p) => { setLocating(false); const g = { lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy }; setGeo(g); onPatch({ ...flow, mode: "domicilio", geo: g }); },
+            () => { setLocating(false); setMsg("No pudimos obtener tu ubicación. Escribe tu dirección."); },
             { enableHighAccuracy: true, timeout: 10000 },
         );
     }
+
+    if (view === "choose") {
+        return (
+            <>
+                <button type="button" class="opt2" onClick={locate}><span>Enviar mi ubicación<small>Te lo llevamos a donde estás</small></span><span>📍</span></button>
+                {store.delivery.pickup && (
+                    <button type="button" class="opt2" onClick={() => onNext({ ...flow, step: "name", mode: "retiro", geo: undefined, ref: undefined })}>
+                        <span>Retiro en el local<small>Pasas a recogerlo</small></span><span>🛍️</span>
+                    </button>
+                )}
+                <button type="button" class="note2 linkbtn" onClick={enterDelivery}>Prefiero escribir mi dirección</button>
+                {store.delivery.note && <p class="note2">{store.delivery.note}</p>}
+            </>
+        );
+    }
+
+    const ok = !!geo || ref.trim().length > 5;
+    return (
+        <>
+            {locating && <p class="note2">Buscando tu ubicación…</p>}
+            {geo && <p class="note2">✓ Ubicación lista (±{Math.round(geo.acc)} m)</p>}
+            {msg && <p class="err2">{msg}</p>}
+            {!geo && !locating && <button type="button" class="opt2" onClick={locate}><span>Enviar mi ubicación</span><span>📍</span></button>}
+            <input class="in2" value={ref} onInput={(e) => setRef((e.target as HTMLInputElement).value)} enterKeyHint="next" autocomplete="street-address"
+                placeholder={geo ? "Referencia (opcional)" : "Tu dirección o referencia"} aria-label="Referencia de entrega" />
+            {store.delivery.note && <p class="note2">{store.delivery.note}</p>}
+            <button type="button" class="cta2 inline" disabled={!ok} onClick={() => onNext({ ...flow, step: "name", mode: "domicilio", geo, ref: ref.trim() || undefined })}>Siguiente</button>
+        </>
+    );
+}
+
+/* ───────────────────────── 5. Nombre ───────────────────────── */
+
+function Name({ flow, onNext }: { flow: Flow; onNext: (f: Flow) => void }) {
+    const [name, setName] = useState(flow.name ?? "");
+    const [i, setI] = useState(0);
+    const order = useRef(NAMES.slice().sort(() => Math.random() - 0.5));
+    const input = useRef<HTMLInputElement>(null);
+
+    // Mientras no escriba, el ejemplo va cambiando: "Juan… María… Diego…". Se detiene al escribir.
+    useEffect(() => {
+        if (name || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+        const t = setInterval(() => setI((n) => (n + 1) % order.current.length), 1400);
+        return () => clearInterval(t);
+    }, [name]);
+    useEffect(() => { input.current?.focus(); }, []);
+
+    const ok = name.trim().length >= 2;
+    const submit = (e?: Event) => { e?.preventDefault(); if (ok) onNext({ ...flow, step: "pay", name: name.trim() }); };
+
+    return (
+        <form onSubmit={submit} class="stack">
+            <input ref={input} class="in2" value={name} maxLength={40} autocomplete="given-name" autocapitalize="words" enterKeyHint="next"
+                placeholder={`${order.current[i]}…`} aria-label="Tu nombre" onInput={(e) => setName((e.target as HTMLInputElement).value)} />
+            <p class="note2">Escribe el tuyo para saber a quién entregarle el pedido.</p>
+            <button type="submit" class="cta2 inline" disabled={!ok}>Siguiente</button>
+        </form>
+    );
+}
+
+/* ───────────────────────── 6. Pago y envío ───────────────────────── */
+
+function Pay({ flow, menu, product, sel, preview, onSent }: {
+    flow: Flow; menu: Menu; product: Product; sel: Selection; preview: boolean; onSent: () => void;
+}) {
+    const { store } = menu;
+    const [payment, setPayment] = useState<Flow["payment"]>(flow.payment ?? (store.payments.length === 1 ? store.payments[0] : undefined));
+    const [cash, setCash] = useState<number | undefined>(flow.cash);
+
+    const input: OrderInput = {
+        code: flow.code ?? newCode(), store, product, sel, mode: flow.mode ?? "retiro", name: flow.name ?? "",
+        lat: flow.geo?.lat, lng: flow.geo?.lng, reference: flow.ref, payment: payment ?? store.payments[0], cashAmount: payment === "efectivo" ? cash : undefined,
+    };
+    const total = orderTotal(input);
+    const bills = [10, 20, 50, 100].filter((b) => b >= Math.ceil(total)).slice(0, 3);
+    const valid = !!payment;
 
     function onSend(e: MouseEvent) {
         if (!valid) { e.preventDefault(); return; }
         if (!preview) {
             // Aviso al servidor sin bloquear la apertura de WhatsApp (el enlace sigue su curso normal).
             const payload = {
-                sessionId: sessionId(), code, slug: store.slug, productId: product.id, variantId: sel.variantId, picks: sel.picks,
-                mode, name: name.trim(), lat: geo?.lat, lng: geo?.lng, accuracy: geo?.accuracy,
-                reference: reference.trim() || undefined, payment, cashAmount, clientTotal: total,
+                sessionId: sessionId(), code: input.code, slug: store.slug, productId: product.id, variantId: sel.variantId, picks: sel.picks,
+                mode: input.mode, name: input.name, lat: flow.geo?.lat, lng: flow.geo?.lng, accuracy: flow.geo?.acc,
+                reference: flow.ref, payment, cashAmount: input.cashAmount, clientTotal: total,
                 src: new URLSearchParams(location.search).get("src") ?? undefined,
             };
             try { navigator.sendBeacon("/api/pedido", new Blob([JSON.stringify(payload)], { type: "application/json" })); } catch { /* sin red: igual abre WhatsApp */ }
         }
-        setTimeout(props.onSent, 400);
+        setTimeout(onSent, 400);
     }
 
-    const href = waLink(store.phone, buildMessage(input));
-    const v = variantOf(product, sel);
-
     return (
-        <div class="k flow" style={`--brand:${brand}`}>
-            <header class="fhead">
-                <button type="button" class="back" aria-label="Atrás" onClick={props.onBack}>‹</button>
-                <span>{store.name}</span>
-            </header>
-            <main class="fbody">
-                <h2>Tus datos</h2>
-                <p class="sum">1× {product.name}{product.variants.length > 1 ? ` · ${v.label}` : ""} — <span class="num">{money(productTotal(product, sel))}</span></p>
-
-                <div class="seg" role="group" aria-label="Entrega">
-                    {store.delivery.enabled && <button type="button" class={mode === "domicilio" ? "on" : ""} onClick={() => setMode("domicilio")}>A domicilio</button>}
-                    {store.delivery.pickup && <button type="button" class={mode === "retiro" ? "on" : ""} onClick={() => setMode("retiro")}>Retiro en local</button>}
-                </div>
-
-                {mode === "domicilio" && (
-                    <section class="field">
-                        <button type="button" class="opt" onClick={locate} disabled={locating}>
-                            <b>{locating ? "Buscando tu ubicación…" : geo ? "Ubicación lista ✓" : "Usar mi ubicación"}</b>
-                            {geo && <span class="num">±{Math.round(geo.accuracy)} m</span>}
-                        </button>
-                        {geoMsg && <p class="err">{geoMsg}</p>}
-                        <label>
-                            Referencia {geo ? "(opcional)" : "(obligatoria)"}
-                            <input value={reference} onInput={(e) => setReference((e.target as HTMLInputElement).value)} placeholder="Casa verde frente a la cancha" autocomplete="street-address" />
-                        </label>
-                        {store.delivery.note && <p class="note">{store.delivery.note}</p>}
-                    </section>
-                )}
-
-                <label class="field">
-                    Tu nombre
-                    <input value={name} onInput={(e) => setName((e.target as HTMLInputElement).value)} autocomplete="name" />
-                </label>
-
-                <div class="seg" role="group" aria-label="Pago">
-                    {store.payments.map((p) => (
-                        <button type="button" class={payment === p ? "on" : ""} onClick={() => setPayment(p)}>{p === "efectivo" ? "Efectivo" : "Transferencia"}</button>
-                    ))}
-                </div>
-                {payment === "efectivo" && (
-                    <label class="field">
-                        ¿Con cuánto pagas? (opcional)
-                        <input value={cash} inputMode="decimal" onInput={(e) => setCash((e.target as HTMLInputElement).value)} placeholder="20" />
-                    </label>
-                )}
-                {fee > 0 && <p class="note">Incluye envío de {money(fee)}</p>}
-            </main>
-            <footer class="fbar">
-                <a class={valid ? "cta wa" : "cta wa off"} href={valid ? href : undefined} aria-disabled={!valid} onClick={onSend as unknown as (e: Event) => void}>
-                    Enviar por WhatsApp · <span class="num">{money(total)}</span>
-                </a>
-            </footer>
-        </div>
-    );
-}
-
-/* ───────────────────────── Pedido enviado ───────────────────────── */
-
-function Sent({ menu, product, sel, code, brand, onAgain }: { menu: Menu; product: Product; sel: Selection; code: string; brand: string; onAgain: () => void }) {
-    const phone = menu.store.phone;
-    return (
-        <div class="k flow" style={`--brand:${brand}`}>
-            <header class="fhead"><span>{menu.store.name}</span></header>
-            <main class="fbody center">
-                <h2>Pedido #{code} listo</h2>
-                <p>Se abrió WhatsApp con tu pedido. Solo falta que pulses <b>Enviar</b> allí.</p>
-                <p class="note">¿No se abrió? Escríbenos al <b class="num">+{phone}</b> con el código #{code}.</p>
-                <p class="sum">{product.name} — <span class="num">{money(productTotal(product, sel))}</span></p>
-            </main>
-            <footer class="fbar">
-                <button type="button" class="cta" onClick={onAgain}>Hacer otro pedido</button>
-            </footer>
-        </div>
+        <>
+            {store.payments.length > 1 && store.payments.map((p) => (
+                <button type="button" class={payment === p ? "opt2 on" : "opt2"} aria-pressed={payment === p} onClick={() => { setPayment(p); if (p !== "efectivo") setCash(undefined); }}>
+                    <span>{p === "efectivo" ? "Efectivo" : "Transferencia"}</span><span>{p === "efectivo" ? "💵" : "🏦"}</span>
+                </button>
+            ))}
+            {store.payments.length === 1 && <p class="note2">Pagas con {store.payments[0]}.</p>}
+            {payment === "efectivo" && (
+                <>
+                    <p class="note2">¿Con cuánto pagas?</p>
+                    <div class="chips2">
+                        <button type="button" class={cash === undefined ? "chip2 on" : "chip2"} onClick={() => setCash(undefined)}>Justo</button>
+                        {bills.map((b) => <button type="button" class={cash === b ? "chip2 on" : "chip2"} onClick={() => setCash(b)}>${b}</button>)}
+                    </div>
+                </>
+            )}
+            <a class={valid ? "cta2 wa inline" : "cta2 wa inline off"} href={valid ? waLink(store.phone, buildMessage(input)) : undefined} aria-disabled={!valid} onClick={onSend as unknown as (e: Event) => void}>
+                Enviar por WhatsApp · <span class="num">{money(total)}</span>
+            </a>
+        </>
     );
 }
