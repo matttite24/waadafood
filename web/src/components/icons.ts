@@ -1,0 +1,43 @@
+// Íconos del panel con nombres por significado (no por dibujo): se importan siempre desde aquí.
+//   import { IconTrash } from "@/components/icons";
+//   <IconTrash />                 → tamaño y grosor por defecto
+//   <IconTrash weight="fill" />   → relleno (estado activo)
+// Para otro ícono de Phosphor, añádelo a esta lista con un nombre que diga para qué sirve.
+export {
+    Receipt as IconPedidos,
+    ForkKnife as IconMenu,
+    ChartBar as IconReportes,
+    UserCircle as IconCuenta,
+    Plus as IconAgregar,
+    Trash as IconBorrar,
+    PencilSimple as IconEditar,
+    Eye as IconVista,
+    Copy as IconCopiar,
+    ShareNetwork as IconCompartir,
+    QrCode as IconQr,
+    DownloadSimple as IconDescargar,
+    Printer as IconImprimir,
+    SpeakerHigh as IconSonido,
+    SpeakerSlash as IconSinSonido,
+    MapPin as IconUbicacion,
+    Motorcycle as IconDomicilio,
+    Storefront as IconLocal,
+    Check as IconOk,
+    CheckCircle as IconListo,
+    XCircle as IconCancelado,
+    X as IconCerrar,
+    CaretUp as IconSubir,
+    CaretDown as IconBajar,
+    ArrowLeft as IconAtras,
+    Camera as IconFoto,
+    Image as IconImagen,
+    Warning as IconAviso,
+    Info as IconInfo,
+    Clock as IconReloj,
+    Lock as IconBloqueado,
+    SignOut as IconSalir,
+    LinkSimple as IconEnlace,
+    CurrencyDollar as IconDinero,
+    Bell as IconAlerta,
+    Hourglass as IconEspera,
+} from "@phosphor-icons/react";

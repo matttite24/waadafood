@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
-import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
-import { Button } from "@/components/ui/button";
+import { Drawer, DrawerContent } from "@/components/ui/drawer";
+import { SheetHead } from "./kit";
 import type { Store } from "./PanelLayout";
 
 const KIOSKO_URL = import.meta.env.VITE_KIOSKO_URL;
@@ -22,11 +22,7 @@ export default function PreviewSheet({ open, store, onClose }: { open: boolean; 
     return (
         <Drawer open={open} onOpenChange={(o) => !o && onClose()}>
             <DrawerContent className="h-[94vh]">
-                <DrawerTitle className="sr-only">Vista previa</DrawerTitle>
-                <div className="flex items-center justify-between px-4 pb-2">
-                    <p className="text-sm font-medium">Vista previa del borrador</p>
-                    <Button variant="ghost" size="sm" onClick={onClose}>Cerrar</Button>
-                </div>
+                <SheetHead title="Vista previa" subtitle="Así lo verá tu cliente, con tus cambios aún sin publicar." />
                 <form ref={formRef} method="POST" action={`${KIOSKO_URL}/${store.slug}?preview=1`} target="kiosko-preview" className="hidden">
                     <input type="hidden" name="menu" value={menu} />
                 </form>

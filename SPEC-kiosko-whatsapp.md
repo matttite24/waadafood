@@ -454,7 +454,7 @@ El dueño opera desde su teléfono, el mismo donde le llega el WhatsApp. **El pa
 ### 12.4 Alertas de pedido nuevo (lo más importante del panel)
 - **Web Push** con claves VAPID. Al crear un pedido, la mutación programa una acción de Node (`"use node"`, librería `web-push`) que envía el aviso a todas las `pushSubs` del comercio. En iOS solo funciona con la PWA instalada en la pantalla de inicio (iOS 16.4+), así que el alta guía la instalación.
 - Con la app abierta: **sonido** + vibración + badge (`navigator.setAppBadge`). El audio necesita un primer toque, así que hay un botón "Activar sonido de pedidos".
-- **Modo cocina:** pantalla siempre encendida (`navigator.wakeLock.request('screen')`), lista grande y un toque para cambiar el estado.
+- **Sin "modo cocina".** Se probó una pantalla siempre encendida (`wakeLock`) y se descartó: no funcionaba bien y no resuelve el problema real, que es enterarse del pedido con el teléfono bloqueado. Eso lo cubre el Web Push. Desde la lista, un pedido se confirma o se entrega con un solo toque.
 - La lista de pedidos es una **consulta reactiva** de Convex: aparece sola, sin sondeo.
 
 ### 12.5 Pantallas

@@ -1,6 +1,7 @@
 import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
-import { Vacio } from "@/components/panel/Vacio";
+import { Empty, Section, Spinner } from "@/components/panel/kit";
+import { IconReportes, IconBloqueado } from "@/components/icons";
 
 const money = (n: number) => `$${n.toFixed(2)}`;
 const DOW = ["D", "L", "M", "M", "J", "V", "S"];
@@ -13,10 +14,10 @@ function monthLabel(key: string) {
 
 function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
     return (
-        <div className="rounded-2xl border p-4">
-            <p className="text-xs text-muted-foreground">{label}</p>
+        <div className="rounded-2xl border bg-card p-4">
+            <p className="text-sm text-muted-foreground">{label}</p>
             <p className="text-2xl font-bold tabular-nums">{value}</p>
-            {sub && <p className="text-xs text-muted-foreground">{sub}</p>}
+            {sub && <p className="text-sm text-muted-foreground">{sub}</p>}
         </div>
     );
 }
@@ -46,7 +47,8 @@ function Ranking({ title, rows }: { title: string; rows: { label: string; orders
 
 export default function Reportes() {
     const data = useQuery(api.stats.summary);
-    if (data === undefined || data === null) return null;
+    if (data === undefined) return <Spinner />;
+    if (data === null) return null;
 
     const { month } = data;
 
@@ -56,7 +58,7 @@ export default function Reportes() {
             <p className="mb-4 text-sm capitalize text-muted-foreground">{monthLabel(month.key)}</p>
 
             {month.orders === 0 && !data.pro ? (
-                <Vacio titulo="Sin datos todavía" texto="Cuando lleguen pedidos, aquí verás tus ventas del mes." />
+                <Empty icon={<IconReportes />} title="Sin datos todavía" text="Cuando lleguen pedidos, aquí verás tus ventas del mes." />
             ) : (
                 <div className="mb-4 grid grid-cols-2 gap-3">
                     <Stat label="Pedidos del mes" value={String(month.orders)} />
@@ -68,12 +70,11 @@ export default function Reportes() {
             )}
 
             {!data.pro && (
-                <section className="rounded-2xl border border-dashed p-4 text-center">
+                <Section className="border-dashed text-center">
+                    <IconBloqueado className="mx-auto mb-2 size-6 text-muted-foreground" />
                     <p className="font-semibold">Reportes completos con Pro</p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                        Hoy, últimos 7 días, productos más pedidos, domicilio vs retiro y pedidos por QR.
-                    </p>
-                </section>
+                    <p className="mt-1 text-sm text-muted-foreground">Hoy, últimos 7 días, productos más pedidos, domicilio vs retiro y pedidos por QR.</p>
+                </Section>
             )}
 
             {data.pro && (

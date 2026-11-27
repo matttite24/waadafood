@@ -38,7 +38,7 @@ function Portada() {
 export default function App() {
     return (
         <ThemeProvider defaultTheme="light" storageKey="waada-theme">
-            <Toaster position="top-center" richColors />
+            <Toaster position="top-center" richColors offset={{ top: "calc(env(safe-area-inset-top) + 64px)" }} />
             <Routes>
                 <Route path="/" element={<Portada />} />
                 <Route path="/sign-in/*" element={<SignInPage />} />

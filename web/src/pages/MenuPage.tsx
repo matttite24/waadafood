@@ -3,26 +3,23 @@ import { useMutation } from "convex/react";
 import { toast } from "sonner";
 import { api } from "@convex/_generated/api";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import { useStore } from "@/components/panel/PanelLayout";
 import PreviewSheet from "@/components/panel/PreviewSheet";
+import PublishBar, { errorText } from "@/components/panel/PublishBar";
 import ProductSheet, { newProduct, type Product } from "@/components/panel/ProductSheet";
+import { IconAgregar, IconListo, IconVista, IconAviso } from "@/components/icons";
+import { cn } from "@/lib/utils";
 
 const MAX_PRODUCTS = 5;
+const KIOSKO_URL = import.meta.env.VITE_KIOSKO_URL;
 const money = (n: number) => `$${n.toFixed(2)}`;
-const strip = (m: unknown) => JSON.stringify(m, (k, v) => (k === "version" ? undefined : v));
 
 export default function MenuPage() {
     const store = useStore();
     const saveDraft = useMutation(api.stores.saveDraft);
-    const publish = useMutation(api.stores.publish);
     const menu = store.draftMenu;
-    const [editing, setEditing] = useState<Product | null>(null);
-    const [publishing, setPublishing] = useState(false);
+    const [editing, setEditing] = useState<{ product: Product; isNew: boolean } | null>(null);
     const [previewing, setPreviewing] = useState(false);
-
-    // "Cambios sin publicar": el borrador difiere de lo publicado (se ignora el número de versión).
-    const dirty = !store.publishedMenu || strip(menu) !== strip(store.publishedMenu);
 
     async function save(products: Product[], okMsg?: string) {
         try {
@@ -30,7 +27,7 @@ export default function MenuPage() {
             if (okMsg) toast.success(okMsg);
             return true;
         } catch (e) {
-            toast.error(e instanceof Error ? e.message.replace(/^.*Uncaught Error: /s, "").split("\n")[0] : "No se pudo guardar");
+            toast.error(errorText(e, "No se pudo guardar"));
             return false;
         }
     }
@@ -38,73 +35,71 @@ export default function MenuPage() {
     async function onSave(p: Product) {
         const exists = menu.products.some((x) => x.id === p.id);
         const products = exists ? menu.products.map((x) => (x.id === p.id ? p : x)) : [...menu.products, p];
-        if (await save(products, "Guardado")) setEditing(null);
+        if (await save(products, exists ? "Cambios guardados" : "Producto agregado")) setEditing(null);
     }
 
     async function onDelete(id: string) {
         if (await save(menu.products.filter((x) => x.id !== id), "Producto eliminado")) setEditing(null);
     }
 
-    function move(i: number, d: -1 | 1) {
+    async function onMove(id: string, dir: -1 | 1) {
+        const i = menu.products.findIndex((x) => x.id === id);
         const a = [...menu.products];
-        [a[i], a[i + d]] = [a[i + d], a[i]];
-        void save(a);
+        [a[i], a[i + dir]] = [a[i + dir], a[i]];
+        await save(a);
     }
 
-    async function onPublish() {
-        setPublishing(true);
-        try {
-            const v = await publish({});
-            toast.success(`Publicado (versión ${v}). Visible en unos minutos.`);
-        } catch (e) {
-            toast.error(e instanceof Error ? e.message.replace(/^.*Uncaught Error: /s, "").split("\n")[0] : "No se pudo publicar");
-        } finally {
-            setPublishing(false);
-        }
-    }
+    // El cambio de Agotado es el más frecuente durante el servicio: un toque, sin abrir nada.
+    const toggle = (p: Product) =>
+        save(menu.products.map((x) => (x.id === p.id ? { ...x, available: !x.available } : x)), p.available ? `«${p.name}» marcado como agotado` : `«${p.name}» disponible otra vez`);
+
+    const editingIndex = editing ? menu.products.findIndex((x) => x.id === editing.product.id) : -1;
 
     return (
         <>
-            <h1 className="mb-1 text-2xl font-bold">Menú</h1>
-            <p className="mb-4 text-sm text-muted-foreground">{menu.products.length} de {MAX_PRODUCTS} productos</p>
+            <h1 className="text-2xl font-bold">Menú</h1>
+            <p className="mb-4 text-sm text-muted-foreground">{menu.products.length} de {MAX_PRODUCTS} productos · toca uno para editarlo</p>
+
             <ul className="flex flex-col gap-3">
-                {menu.products.map((p, i) => (
-                    <li key={p.id} className="flex items-center gap-2 rounded-2xl border p-3">
-                        <div className="flex flex-col">
-                            <button aria-label="Subir" className="h-6 w-8 text-muted-foreground disabled:opacity-30" disabled={i === 0} onClick={() => move(i, -1)}>▲</button>
-                            <button aria-label="Bajar" className="h-6 w-8 text-muted-foreground disabled:opacity-30" disabled={i === menu.products.length - 1} onClick={() => move(i, 1)}>▼</button>
-                        </div>
-                        <button className="flex min-w-0 flex-1 items-center gap-3 text-left" onClick={() => setEditing(p)}>
-                            <span className="h-12 w-12 shrink-0 rounded-xl" style={{ background: p.color }} />
+                {menu.products.map((p) => (
+                    <li key={p.id} className={cn("flex items-center gap-3 rounded-2xl border bg-card p-3 shadow-[0_1px_2px_rgba(0,0,0,0.04)]", !p.available && "bg-muted/40")}>
+                        <button className="flex min-w-0 flex-1 items-center gap-3 text-left" onClick={() => setEditing({ product: p, isNew: false })} aria-label={`Editar ${p.name}`}>
+                            <span className={cn("size-16 shrink-0 overflow-hidden rounded-xl border", !p.available && "opacity-50 grayscale")} style={{ background: p.color }}>
+                                {p.image && <img src={`${KIOSKO_URL}/i/${p.image.key}-480.webp`} alt="" className="size-full object-cover" loading="lazy" />}
+                            </span>
                             <span className="min-w-0">
-                                <span className="block truncate font-semibold">{p.name}</span>
+                                <span className={cn("block truncate text-base font-semibold", !p.available && "text-muted-foreground")}>{p.name}</span>
                                 <span className="block text-sm text-muted-foreground">Desde {money(Math.min(...p.variants.map((v) => v.price)))}</span>
                             </span>
                         </button>
-                        <div className="flex flex-col items-center gap-1">
-                            <Switch checked={p.available} onCheckedChange={(c) => save(menu.products.map((x) => (x.id === p.id ? { ...x, available: c } : x)))} />
-                            <span className="text-[11px] text-muted-foreground">{p.available ? "Disponible" : "Agotado"}</span>
-                        </div>
+                        <Button size="sm" variant={p.available ? "soft" : "outline"} className={cn("shrink-0", !p.available && "border-destructive/40 text-destructive")} onClick={() => toggle(p)}
+                            aria-pressed={!p.available} aria-label={p.available ? `Marcar ${p.name} como agotado` : `Marcar ${p.name} como disponible`}>
+                            {p.available ? <><IconListo weight="fill" />Disponible</> : <><IconAviso weight="fill" />Agotado</>}
+                        </Button>
                     </li>
                 ))}
             </ul>
-            {menu.products.length < MAX_PRODUCTS && (
-                <Button variant="outline" className="mt-3 h-12 w-full" onClick={() => setEditing(newProduct())}>+ Agregar producto</Button>
+
+            {menu.products.length < MAX_PRODUCTS ? (
+                <Button variant="outline" className="mt-3 w-full" onClick={() => setEditing({ product: newProduct(), isNew: true })}><IconAgregar />Agregar producto</Button>
+            ) : (
+                <p className="mt-3 text-center text-sm text-muted-foreground">Llegaste al máximo de {MAX_PRODUCTS} productos.</p>
             )}
 
-            <div className="h-28" />
-            <div className="fixed inset-x-3 z-30 mx-auto max-w-sm rounded-2xl border border-black/5 bg-background/95 p-3 shadow-[0_8px_30px_rgba(0,0,0,0.10)] backdrop-blur-md" style={{ bottom: "calc(env(safe-area-inset-bottom) + 88px)" }}>
-                {dirty && <p className="mb-2 text-center text-xs font-medium text-amber-600">Cambios sin publicar</p>}
-                <div className="flex gap-2">
-                    <Button variant="outline" className="h-12" onClick={() => setPreviewing(true)}>Vista previa</Button>
-                    <Button className="h-12 flex-1" disabled={!dirty || publishing} onClick={onPublish}>
-                        {publishing ? "Publicando…" : dirty ? "Publicar" : "Todo publicado"}
-                    </Button>
-                </div>
-            </div>
+            <div className="h-36" />
+            <PublishBar store={store} showAlways left={<Button variant="outline" onClick={() => setPreviewing(true)}><IconVista />Vista previa</Button>} />
 
             <PreviewSheet open={previewing} store={store} onClose={() => setPreviewing(false)} />
-            <ProductSheet product={editing} onClose={() => setEditing(null)} onSave={onSave} onDelete={onDelete} canDelete={menu.products.length > 1 && menu.products.some((x) => x.id === editing?.id)} />
+            <ProductSheet
+                product={editing?.product ?? null}
+                isNew={editing?.isNew ?? false}
+                index={editingIndex}
+                total={menu.products.length}
+                onClose={() => setEditing(null)}
+                onSave={onSave}
+                onDelete={onDelete}
+                onMove={onMove}
+            />
         </>
     );
 }
