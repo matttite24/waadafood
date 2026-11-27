@@ -48,7 +48,7 @@ function sampleMenu(slug: string, name: string, phone: string): Menu {
                 id: "producto-1",
                 name: "Mi primer producto",
                 desc: "Edita este producto desde el panel.",
-                color: "#F4C542",
+                color: "#F4B400",
                 variants: [{ id: "unico", label: "Único", price: 5 }],
                 groups: [],
                 upsell: false,

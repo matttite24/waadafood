@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Field, PriceInput } from "@/components/ui/field";
+import { ColorPicker } from "@/components/ui/color-picker";
 import { Section, SheetHead } from "./kit";
 import { IconDomicilio, IconLocal, IconDinero } from "@/components/icons";
 import type { Store } from "./PanelLayout";
@@ -73,10 +74,11 @@ export default function StoreSettingsSheet({
                                 <Input list="categorias" maxLength={40} autoComplete="off" autoCapitalize="sentences" placeholder="Ej.: Hamburguesas" value={f.category} onChange={(e) => setF({ ...f, category: e.target.value })} />
                             </Field>
                             <datalist id="categorias">{CATEGORIES.map((c) => <option key={c} value={c} />)}</datalist>
-                            <label className="flex items-center justify-between gap-3">
-                                <span className="text-base font-medium">Color de tu marca</span>
-                                <input type="color" aria-label="Color de tu marca" className="h-12 w-16 shrink-0 rounded-xl border" value={s.color} onChange={(e) => setS({ color: e.target.value })} />
-                            </label>
+                            <div className="flex flex-col gap-2">
+                                <span className="text-sm font-medium">Color de tu marca</span>
+                                <ColorPicker label="Color de tu marca" value={s.color} onChange={(hex) => setS({ color: hex })} />
+                                <span className="text-sm text-muted-foreground">Se usa en los botones y pantallas de tu página de pedidos.</span>
+                            </div>
                         </div>
                     </Section>
 

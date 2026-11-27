@@ -6,6 +6,7 @@ import { Drawer, DrawerContent, DrawerFooter } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, PriceInput } from "@/components/ui/field";
+import { COLORS, ColorPicker } from "@/components/ui/color-picker";
 import { IconButton, Section, SheetHead } from "./kit";
 import { IconAgregar, IconBajar, IconBorrar, IconFoto, IconSubir } from "@/components/icons";
 import { errorText } from "./PublishBar";
@@ -34,7 +35,7 @@ const withExtras = (p: Product, options: Extra[]): Product =>
 const simplify = (p: Product): Product => withExtras({ ...p, groups: [] }, p.groups.flatMap((g) => g.options).slice(0, MAX_EXTRAS));
 
 export function newProduct(): Product {
-    return { id: uid(), name: "", desc: "", color: "#F4C542", upsell: false, available: true, groups: [], variants: [{ id: uid(), label: "Único", price: 0 }] };
+    return { id: uid(), name: "", desc: "", color: COLORS[2].hex, upsell: false, available: true, groups: [], variants: [{ id: uid(), label: "Único", price: 0 }] };
 }
 
 /** Primer problema del producto, escrito para el dueño; null si todo está bien. */
@@ -150,9 +151,9 @@ export default function ProductSheet({
                         </div>
                         <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => onPickPhoto(e.target.files?.[0])} />
                         {!p.image && (
-                            <div className="mt-4 flex items-center justify-between gap-3">
-                                <span className="text-sm text-muted-foreground">Sin foto se muestra este color de fondo</span>
-                                <input type="color" aria-label="Color de fondo" className="h-12 w-16 shrink-0 rounded-xl border" value={p.color} onChange={(e) => set({ color: e.target.value })} />
+                            <div className="mt-4 flex flex-col gap-3">
+                                <span className="text-sm text-muted-foreground">Sin foto, el producto se muestra sobre este color</span>
+                                <ColorPicker label="Color de fondo del producto" value={p.color} onChange={(hex) => set({ color: hex })} />
                             </div>
                         )}
                     </Section>
