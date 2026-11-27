@@ -40,8 +40,8 @@ function Photo({ p, first }: { p: Product; first: boolean }) {
     );
 }
 
-function Slide({ p, open, i, n, onPick }: { p: Product; open: boolean; i: number; n: number; onPick?: (p: Product) => void }) {
-    const bg = safeColor(p.color);
+function Slide({ p, open, i, n, brand, onPick }: { p: Product; open: boolean; i: number; n: number; brand: string; onPick?: (p: Product) => void }) {
+    const bg = brand; // sin foto, el producto va sobre el color de la marca
     const from = Math.min(...p.variants.map((v) => v.price));
     const canOrder = open && p.available;
     const next = i < n - 1 ? `#p-${i + 1}` : null;
@@ -49,23 +49,16 @@ function Slide({ p, open, i, n, onPick }: { p: Product; open: boolean; i: number
         <section id={`p-${i}`} class={p.image ? "slide has-img" : "slide"} data-product={p.id} style={p.image ? `background:${bg}` : `background:${bg};color:${ink(bg)}`}>
             <Photo p={p} first={i === 0} />
             <div class="top" />
-            {n > 1 && (
-                <nav class="dots" aria-label="Productos">
-                    {Array.from({ length: n }, (_, j) => (
-                        <a key={j} class={j === i ? "dot on" : "dot"} href={`#p-${j}`} aria-label={`Producto ${j + 1} de ${n}`} aria-current={j === i ? "true" : undefined} />
-                    ))}
-                </nav>
-            )}
             <div class="body">
                 {p.tag && <span class="tag">{p.tag}</span>}
                 <h1>{p.name}</h1>
                 {p.desc && <p class="desc">{p.desc}</p>}
                 <strong class="from">Desde {money(from)}</strong>
             </div>
-            {next && <a class="more" href={next}>Desliza para ver más<span aria-hidden="true">⌄</span></a>}
             <button class="cta" type="button" data-pick={p.id} disabled={!canOrder} onClick={() => onPick?.(p)}>
                 {!open ? "Cerrado ahora" : p.available ? "Lo quiero" : "Agotado"}
             </button>
+            {next && <a class="more" href={next}>Desliza para ver más<span aria-hidden="true">⌄</span></a>}
         </section>
     );
 }
@@ -73,15 +66,20 @@ function Slide({ p, open, i, n, onPick }: { p: Product; open: boolean; i: number
 /** Pantalla de inicio del kiosko: carrusel con scroll-snap que funciona sin JavaScript (flechas con anclas). */
 export function Kiosko({ menu, open, onPick }: { menu: Menu; open: boolean; onPick?: (p: Product) => void }) {
     const { store, products } = menu;
+    const brand = safeColor(store.color, "#C8321F");
     return (
         <div class="k">
             <header class="bar">
-                <span class="name">{store.name}</span>
-                {!open && <span class="closed">Cerrado</span>}
+                <span class="pill" style={`background:${brand};color:${ink(brand)}`}>
+                    <i class={open ? "live" : "off"} aria-hidden="true" />
+                    <span class="pname">{store.name}</span>
+                    {open && <span class="sr">Abierto</span>}
+                    {!open && <span class="pstate">Cerrado</span>}
+                </span>
             </header>
             <div class="rail">
                 {products.map((p, i) => (
-                    <Slide key={p.id} p={p} open={open} i={i} n={products.length} onPick={onPick} />
+                    <Slide key={p.id} p={p} open={open} i={i} n={products.length} brand={brand} onPick={onPick} />
                 ))}
             </div>
         </div>
