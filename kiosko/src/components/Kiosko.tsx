@@ -44,22 +44,25 @@ function Slide({ p, open, i, n, onPick }: { p: Product; open: boolean; i: number
     const bg = safeColor(p.color);
     const from = Math.min(...p.variants.map((v) => v.price));
     const canOrder = open && p.available;
-    const prev = i > 0 ? `#p-${i - 1}` : null;
     const next = i < n - 1 ? `#p-${i + 1}` : null;
     return (
         <section id={`p-${i}`} class={p.image ? "slide has-img" : "slide"} data-product={p.id} style={p.image ? `background:${bg}` : `background:${bg};color:${ink(bg)}`}>
             <Photo p={p} first={i === 0} />
-            <div class="top">
-                {prev ? <a class="arrow" href={prev} aria-label="Anterior">‹</a> : <span class="arrow off" />}
-                {n > 1 && <span class="dots" aria-hidden="true">{Array.from({ length: n }, (_, j) => (j === i ? "●" : "○")).join(" ")}</span>}
-                {next ? <a class="arrow" href={next} aria-label="Siguiente">›</a> : <span class="arrow off" />}
-            </div>
+            <div class="top" />
+            {n > 1 && (
+                <nav class="dots" aria-label="Productos">
+                    {Array.from({ length: n }, (_, j) => (
+                        <a key={j} class={j === i ? "dot on" : "dot"} href={`#p-${j}`} aria-label={`Producto ${j + 1} de ${n}`} aria-current={j === i ? "true" : undefined} />
+                    ))}
+                </nav>
+            )}
             <div class="body">
                 {p.tag && <span class="tag">{p.tag}</span>}
                 <h1>{p.name}</h1>
                 {p.desc && <p class="desc">{p.desc}</p>}
                 <strong class="from">Desde {money(from)}</strong>
             </div>
+            {next && <a class="more" href={next}>Desliza para ver más<span aria-hidden="true">⌄</span></a>}
             <button class="cta" type="button" data-pick={p.id} disabled={!canOrder} onClick={() => onPick?.(p)}>
                 {!open ? "Cerrado ahora" : p.available ? "Lo quiero" : "Agotado"}
             </button>
